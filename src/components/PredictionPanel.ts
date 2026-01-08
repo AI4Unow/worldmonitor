@@ -6,6 +6,13 @@ export class PredictionPanel extends Panel {
     super({ id: 'polymarket', title: 'Prediction Markets' });
   }
 
+  private formatVolume(volume?: number): string {
+    if (!volume) return '';
+    if (volume >= 1_000_000) return `$${(volume / 1_000_000).toFixed(1)}M`;
+    if (volume >= 1_000) return `$${(volume / 1_000).toFixed(0)}K`;
+    return `$${volume.toFixed(0)}`;
+  }
+
   public renderPredictions(data: PredictionMarket[]): void {
     if (data.length === 0) {
       this.showError('Failed to load predictions');
@@ -13,17 +20,26 @@ export class PredictionPanel extends Panel {
     }
 
     const html = data
-      .map(
-        (p) => `
+      .map((p) => {
+        const yesPercent = Math.round(p.yesPrice);
+        const noPercent = 100 - yesPercent;
+        const volumeStr = this.formatVolume(p.volume);
+
+        return `
       <div class="prediction-item">
         <div class="prediction-question">${p.title}</div>
+        ${volumeStr ? `<div class="prediction-volume">Vol: ${volumeStr}</div>` : ''}
         <div class="prediction-bar">
-          <div class="prediction-yes" style="width: ${p.yesPrice}%">${p.yesPrice.toFixed(0)}%</div>
-          <div class="prediction-no">${(100 - p.yesPrice).toFixed(0)}%</div>
+          <div class="prediction-yes" style="width: ${yesPercent}%">
+            <span class="prediction-label">Yes ${yesPercent}%</span>
+          </div>
+          <div class="prediction-no" style="width: ${noPercent}%">
+            <span class="prediction-label">No ${noPercent}%</span>
+          </div>
         </div>
       </div>
-    `
-      )
+    `;
+      })
       .join('');
 
     this.setContent(html);
