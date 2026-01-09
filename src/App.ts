@@ -526,6 +526,7 @@ export class App {
         status: 'ok',
         itemCount: items.length,
       });
+      this.statusPanel?.updateApi('RSS2JSON', { status: 'ok' });
 
       return items;
     } catch (error) {
@@ -533,6 +534,7 @@ export class App {
         status: 'error',
         errorMessage: String(error),
       });
+      this.statusPanel?.updateApi('RSS2JSON', { status: 'error' });
       return [];
     }
   }
@@ -579,26 +581,36 @@ export class App {
   }
 
   private async loadMarkets(): Promise<void> {
-    // Stocks
-    const stocks = await fetchMultipleStocks(MARKET_SYMBOLS);
-    this.latestMarkets = stocks;
-    (this.panels['markets'] as MarketPanel).renderMarkets(stocks);
+    try {
+      // Stocks
+      const stocks = await fetchMultipleStocks(MARKET_SYMBOLS);
+      this.latestMarkets = stocks;
+      (this.panels['markets'] as MarketPanel).renderMarkets(stocks);
+      this.statusPanel?.updateApi('Alpha Vantage', { status: 'ok' });
 
-    // Sectors
-    const sectors = await fetchMultipleStocks(SECTORS.map((s) => ({ ...s, display: s.name })));
-    (this.panels['heatmap'] as HeatmapPanel).renderHeatmap(
-      sectors.map((s) => ({ name: s.name, change: s.change }))
-    );
+      // Sectors
+      const sectors = await fetchMultipleStocks(SECTORS.map((s) => ({ ...s, display: s.name })));
+      (this.panels['heatmap'] as HeatmapPanel).renderHeatmap(
+        sectors.map((s) => ({ name: s.name, change: s.change }))
+      );
 
-    // Commodities
-    const commodities = await fetchMultipleStocks(COMMODITIES);
-    (this.panels['commodities'] as CommoditiesPanel).renderCommodities(
-      commodities.map((c) => ({ display: c.display, price: c.price, change: c.change }))
-    );
+      // Commodities
+      const commodities = await fetchMultipleStocks(COMMODITIES);
+      (this.panels['commodities'] as CommoditiesPanel).renderCommodities(
+        commodities.map((c) => ({ display: c.display, price: c.price, change: c.change }))
+      );
+    } catch {
+      this.statusPanel?.updateApi('Alpha Vantage', { status: 'error' });
+    }
 
-    // Crypto
-    const crypto = await fetchCrypto();
-    (this.panels['crypto'] as CryptoPanel).renderCrypto(crypto);
+    try {
+      // Crypto
+      const crypto = await fetchCrypto();
+      (this.panels['crypto'] as CryptoPanel).renderCrypto(crypto);
+      this.statusPanel?.updateApi('CoinGecko', { status: 'ok' });
+    } catch {
+      this.statusPanel?.updateApi('CoinGecko', { status: 'error' });
+    }
   }
 
   private async loadPredictions(): Promise<void> {
@@ -618,8 +630,13 @@ export class App {
   }
 
   private async loadEarthquakes(): Promise<void> {
-    const earthquakes = await fetchEarthquakes();
-    this.map?.setEarthquakes(earthquakes);
+    try {
+      const earthquakes = await fetchEarthquakes();
+      this.map?.setEarthquakes(earthquakes);
+      this.statusPanel?.updateApi('USGS', { status: 'ok' });
+    } catch {
+      this.statusPanel?.updateApi('USGS', { status: 'error' });
+    }
   }
 
   private updateMonitorResults(): void {
