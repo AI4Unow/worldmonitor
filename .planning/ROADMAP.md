@@ -74,28 +74,38 @@ Plans:
 - [x] 2C-01-PLAN.md -- INT64_ENCODING_NUMBER prerequisite: annotate all proto time fields, regenerate, fix handler
 - [x] 2C-02-PLAN.md -- Client switchover: rewrite adapter, adapt components, delete legacy endpoint + proxy
 
-### Phase 2D-2S: Remaining Domain Migrations
-**Goal**: Each remaining domain migrated one at a time in order of complexity
+### Phase 2D: Wildfire Migration
+**Goal**: Migrate wildfire/FIRMS domain to sebuf -- enhance proto with region/daynight fields, implement CSV-parsing handler with env-var gating, create service module with real business logic (region stats, flatten, map-compatible output), rewire all consumers, delete legacy
 **Depends on**: Phase 2C
+**Status**: Planned
+**Requirements:** [DOMAIN-01, SERVER-02]
+**Plans:** 2 plans
+Plans:
+- [ ] 2D-01-PLAN.md -- Proto enhancement + wildfire handler + gateway wiring + sidecar rebuild
+- [ ] 2D-02-PLAN.md -- Wildfires service module + consumer rewiring + legacy deletion
+
+### Phase 2E-2S: Remaining Domain Migrations
+**Goal**: Each remaining domain migrated one at a time in order of complexity
+**Depends on**: Phase 2D
 
 Migration order (one sub-phase each):
-1. seismology — simplest proxy, validates full pipeline
-2. wildfire — validates env-var gating
-3. climate — validates enum-heavy responses
-4. prediction — validates query params
-5. displacement — validates multi-entity responses
-6. aviation — validates XML upstream parsing
-7. research — validates 3-RPC service pattern
-8. unrest — validates ACLED auth token
-9. conflict — validates dual-upstream
-10. maritime — validates AIS snapshot caching
-11. cyber — validates multi-source aggregation
-12. infrastructure — validates external service fan-out
-13. economic — validates FRED/WorldBank/EIA
-14. market — validates multi-source finance
-15. military — validates OpenSky+Wingbits+Railway
-16. news — validates RSS fan-out + AI summarization
-17. intelligence — final: cross-domain computation
+1. ~~seismology~~ (complete, Phase 2C)
+2. ~~wildfire~~ (Phase 2D)
+3. climate -- validates enum-heavy responses
+4. prediction -- validates query params
+5. displacement -- validates multi-entity responses
+6. aviation -- validates XML upstream parsing
+7. research -- validates 3-RPC service pattern
+8. unrest -- validates ACLED auth token
+9. conflict -- validates dual-upstream
+10. maritime -- validates AIS snapshot caching
+11. cyber -- validates multi-source aggregation
+12. infrastructure -- validates external service fan-out
+13. economic -- validates FRED/WorldBank/EIA
+14. market -- validates multi-source finance
+15. military -- validates OpenSky+Wingbits+Railway
+16. news -- validates RSS fan-out + AI summarization
+17. intelligence -- final: cross-domain computation
 
 Each migration step:
 1. Implement handler in `api/server/worldmonitor/{domain}/v1/handler.ts`
@@ -117,5 +127,6 @@ Each migration step:
 | 2A. All Domain Protos | Complete | 2026-02-18 |
 | 2B. Server Runtime | Complete | 2026-02-18 |
 | 2C. Seismology Migration | Complete | 2026-02-18 |
-| 2D-2S. Domain Migrations (0/16) | Not started | - |
+| 2D. Wildfire Migration | Planned | - |
+| 2E-2S. Domain Migrations (0/15) | Not started | - |
 | 2T. Legacy Cleanup | Not started | - |
