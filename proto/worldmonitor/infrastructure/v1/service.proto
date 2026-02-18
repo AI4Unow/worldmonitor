@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package worldmonitor.infrastructure.v1;
+
+import "sebuf/http/annotations.proto";
+import "worldmonitor/infrastructure/v1/list_internet_outages.proto";
+import "worldmonitor/infrastructure/v1/list_service_statuses.proto";
+
+// InfrastructureService provides APIs for internet outage monitoring from Cloudflare Radar
+// and external service status tracking.
+service InfrastructureService {
+  option (sebuf.http.service_config) = {base_path: "/api/infrastructure/v1"};
+
+  // ListInternetOutages retrieves detected internet outages from Cloudflare Radar.
+  rpc ListInternetOutages(ListInternetOutagesRequest) returns (ListInternetOutagesResponse) {
+    option (sebuf.http.config) = {path: "/list-internet-outages"};
+  }
+
+  // ListServiceStatuses retrieves operational status of monitored external services.
+  rpc ListServiceStatuses(ListServiceStatusesRequest) returns (ListServiceStatusesResponse) {
+    option (sebuf.http.config) = {path: "/list-service-statuses"};
+  }
+}

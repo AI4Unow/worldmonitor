@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package worldmonitor.displacement.v1;
+
+import "worldmonitor/core/v1/geo.proto";
+
+// DisplacementSummary represents a global overview of displacement data from UNHCR.
+message DisplacementSummary {
+  // Data year.
+  int32 year = 1;
+  // Global totals across all categories.
+  GlobalDisplacementTotals global_totals = 2;
+  // Per-country displacement breakdowns.
+  repeated CountryDisplacement countries = 3;
+  // Top displacement flows between countries.
+  repeated DisplacementFlow top_flows = 4;
+}
+
+// GlobalDisplacementTotals represents worldwide displacement figures.
+message GlobalDisplacementTotals {
+  // Total recognized refugees worldwide.
+  int64 refugees = 1;
+  // Total asylum seekers worldwide.
+  int64 asylum_seekers = 2;
+  // Total internally displaced persons worldwide.
+  int64 idps = 3;
+  // Total stateless persons worldwide.
+  int64 stateless = 4;
+  // Grand total of displaced persons.
+  int64 total = 5;
+}
+
+// CountryDisplacement represents displacement metrics for a single country.
+message CountryDisplacement {
+  // ISO 3166-1 alpha-2 country code.
+  string code = 1;
+  // Country name.
+  string name = 2;
+  // Refugees originating from this country.
+  int64 refugees = 3;
+  // Asylum seekers from this country.
+  int64 asylum_seekers = 4;
+  // Internally displaced persons within this country.
+  int64 idps = 5;
+  // Stateless persons associated with this country.
+  int64 stateless = 6;
+  // Total displaced from this country.
+  int64 total_displaced = 7;
+  // Refugees hosted by this country.
+  int64 host_refugees = 8;
+  // Asylum seekers hosted by this country.
+  int64 host_asylum_seekers = 9;
+  // Total persons hosted by this country.
+  int64 host_total = 10;
+  // Representative location for mapping.
+  worldmonitor.core.v1.GeoCoordinates location = 11;
+}
+
+// DisplacementFlow represents a refugee movement corridor between two countries.
+message DisplacementFlow {
+  // ISO 3166-1 alpha-2 code of the origin country.
+  string origin_code = 1;
+  // Origin country name.
+  string origin_name = 2;
+  // ISO 3166-1 alpha-2 code of the asylum country.
+  string asylum_code = 3;
+  // Asylum country name.
+  string asylum_name = 4;
+  // Number of refugees in this flow.
+  int64 refugees = 5;
+  // Origin country representative location.
+  worldmonitor.core.v1.GeoCoordinates origin_location = 6;
+  // Asylum country representative location.
+  worldmonitor.core.v1.GeoCoordinates asylum_location = 7;
+}

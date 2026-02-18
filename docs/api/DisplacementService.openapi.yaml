@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+    title: DisplacementService API
+    version: 1.0.0
+paths:
+    /api/displacement/v1/get-displacement-summary:
+        post:
+            tags:
+                - DisplacementService
+            summary: GetDisplacementSummary
+            description: GetDisplacementSummary retrieves global refugee and IDP statistics from UNHCR.
+            operationId: GetDisplacementSummary
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GetDisplacementSummaryRequest'
+                required: true
+            responses:
+                "200":
+                    description: Successful response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetDisplacementSummaryResponse'
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                default:
+                    description: Error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+components:
+    schemas:
+        Error:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message (e.g., 'user not found', 'database connection failed')
+            description: Error is returned when a handler encounters an error. It contains a simple error message that the developer can customize.
+        FieldViolation:
+            type: object
+            properties:
+                field:
+                    type: string
+                    description: The field path that failed validation (e.g., 'user.email' for nested fields). For header validation, this will be the header name (e.g., 'X-API-Key')
+                description:
+                    type: string
+                    description: Human-readable description of the validation violation (e.g., 'must be a valid email address', 'required field missing')
+            required:
+                - field
+                - description
+            description: FieldViolation describes a single validation error for a specific field.
+        ValidationError:
+            type: object
+            properties:
+                violations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FieldViolation'
+                    description: List of validation violations
+            required:
+                - violations
+            description: ValidationError is returned when request validation fails. It contains a list of field violations describing what went wrong.
+        GetDisplacementSummaryRequest:
+            type: object
+            properties:
+                year:
+                    type: integer
+                    format: int32
+                    description: Data year to retrieve (e.g., 2023). Uses latest available if zero.
+                countryLimit:
+                    type: integer
+                    format: int32
+                    description: Maximum number of country entries to return.
+                flowLimit:
+                    type: integer
+                    format: int32
+                    description: Maximum number of displacement flows to return.
+            description: GetDisplacementSummaryRequest specifies parameters for retrieving displacement data.
+        GetDisplacementSummaryResponse:
+            type: object
+            properties:
+                summary:
+                    $ref: '#/components/schemas/DisplacementSummary'
+            description: GetDisplacementSummaryResponse contains the global displacement summary.
+        DisplacementSummary:
+            type: object
+            properties:
+                year:
+                    type: integer
+                    format: int32
+                    description: Data year.
+                globalTotals:
+                    $ref: '#/components/schemas/GlobalDisplacementTotals'
+                countries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CountryDisplacement'
+                topFlows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DisplacementFlow'
+            description: DisplacementSummary represents a global overview of displacement data from UNHCR.
+        GlobalDisplacementTotals:
+            type: object
+            properties:
+                refugees:
+                    type: string
+                    format: int64
+                    description: Total recognized refugees worldwide.
+                asylumSeekers:
+                    type: string
+                    format: int64
+                    description: Total asylum seekers worldwide.
+                idps:
+                    type: string
+                    format: int64
+                    description: Total internally displaced persons worldwide.
+                stateless:
+                    type: string
+                    format: int64
+                    description: Total stateless persons worldwide.
+                total:
+                    type: string
+                    format: int64
+                    description: Grand total of displaced persons.
+            description: GlobalDisplacementTotals represents worldwide displacement figures.
+        CountryDisplacement:
+            type: object
+            properties:
+                code:
+                    type: string
+                    description: ISO 3166-1 alpha-2 country code.
+                name:
+                    type: string
+                    description: Country name.
+                refugees:
+                    type: string
+                    format: int64
+                    description: Refugees originating from this country.
+                asylumSeekers:
+                    type: string
+                    format: int64
+                    description: Asylum seekers from this country.
+                idps:
+                    type: string
+                    format: int64
+                    description: Internally displaced persons within this country.
+                stateless:
+                    type: string
+                    format: int64
+                    description: Stateless persons associated with this country.
+                totalDisplaced:
+                    type: string
+                    format: int64
+                    description: Total displaced from this country.
+                hostRefugees:
+                    type: string
+                    format: int64
+                    description: Refugees hosted by this country.
+                hostAsylumSeekers:
+                    type: string
+                    format: int64
+                    description: Asylum seekers hosted by this country.
+                hostTotal:
+                    type: string
+                    format: int64
+                    description: Total persons hosted by this country.
+                location:
+                    $ref: '#/components/schemas/GeoCoordinates'
+            description: CountryDisplacement represents displacement metrics for a single country.
+        GeoCoordinates:
+            type: object
+            properties:
+                latitude:
+                    type: number
+                    maximum: 90
+                    minimum: -90
+                    format: double
+                    description: Latitude in decimal degrees (-90 to 90).
+                longitude:
+                    type: number
+                    maximum: 180
+                    minimum: -180
+                    format: double
+                    description: Longitude in decimal degrees (-180 to 180).
+            description: GeoCoordinates represents a geographic location using WGS84 coordinates.
+        DisplacementFlow:
+            type: object
+            properties:
+                originCode:
+                    type: string
+                    description: ISO 3166-1 alpha-2 code of the origin country.
+                originName:
+                    type: string
+                    description: Origin country name.
+                asylumCode:
+                    type: string
+                    description: ISO 3166-1 alpha-2 code of the asylum country.
+                asylumName:
+                    type: string
+                    description: Asylum country name.
+                refugees:
+                    type: string
+                    format: int64
+                    description: Number of refugees in this flow.
+                originLocation:
+                    $ref: '#/components/schemas/GeoCoordinates'
+                asylumLocation:
+                    $ref: '#/components/schemas/GeoCoordinates'
+            description: DisplacementFlow represents a refugee movement corridor between two countries.

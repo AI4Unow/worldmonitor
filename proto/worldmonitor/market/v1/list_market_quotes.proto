@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package worldmonitor.market.v1;
+
+import "worldmonitor/market/v1/market_quote.proto";
+
+// ListMarketQuotesRequest specifies which stock/index symbols to retrieve.
+message ListMarketQuotesRequest {
+  // Ticker symbols to retrieve (e.g., ["AAPL", "^GSPC"]). Empty returns defaults.
+  repeated string symbols = 1;
+}
+
+// ListMarketQuotesResponse contains stock and index quotes.
+message ListMarketQuotesResponse {
+  // The list of market quotes.
+  repeated MarketQuote quotes = 1;
+}

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package worldmonitor.prediction.v1;
+
+// PredictionMarket represents a prediction market contract from Polymarket.
+message PredictionMarket {
+  // Unique market identifier or slug.
+  string id = 1;
+  // Market question or title.
+  string title = 2;
+  // Current "Yes" price (0.0 to 1.0, representing probability).
+  double yes_price = 3;
+  // Trading volume in USD.
+  double volume = 4;
+  // URL to the Polymarket market page.
+  string url = 5;
+  // Market close time, as Unix epoch milliseconds. Zero if no expiry.
+  int64 closes_at = 6;
+  // Market category (e.g., "Politics", "Crypto", "Sports").
+  string category = 7;
+}

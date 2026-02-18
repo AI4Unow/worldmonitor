@@ -1,0 +1,308 @@
+openapi: 3.1.0
+info:
+    title: ResearchService API
+    version: 1.0.0
+paths:
+    /api/research/v1/list-arxiv-papers:
+        post:
+            tags:
+                - ResearchService
+            summary: ListArxivPapers
+            description: ListArxivPapers retrieves recent papers from arXiv.
+            operationId: ListArxivPapers
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListArxivPapersRequest'
+                required: true
+            responses:
+                "200":
+                    description: Successful response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListArxivPapersResponse'
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                default:
+                    description: Error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /api/research/v1/list-trending-repos:
+        post:
+            tags:
+                - ResearchService
+            summary: ListTrendingRepos
+            description: ListTrendingRepos retrieves trending repositories from GitHub.
+            operationId: ListTrendingRepos
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListTrendingReposRequest'
+                required: true
+            responses:
+                "200":
+                    description: Successful response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListTrendingReposResponse'
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                default:
+                    description: Error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+    /api/research/v1/list-hackernews-items:
+        post:
+            tags:
+                - ResearchService
+            summary: ListHackernewsItems
+            description: ListHackernewsItems retrieves top stories from Hacker News.
+            operationId: ListHackernewsItems
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ListHackernewsItemsRequest'
+                required: true
+            responses:
+                "200":
+                    description: Successful response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListHackernewsItemsResponse'
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ValidationError'
+                default:
+                    description: Error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+components:
+    schemas:
+        Error:
+            type: object
+            properties:
+                message:
+                    type: string
+                    description: Error message (e.g., 'user not found', 'database connection failed')
+            description: Error is returned when a handler encounters an error. It contains a simple error message that the developer can customize.
+        FieldViolation:
+            type: object
+            properties:
+                field:
+                    type: string
+                    description: The field path that failed validation (e.g., 'user.email' for nested fields). For header validation, this will be the header name (e.g., 'X-API-Key')
+                description:
+                    type: string
+                    description: Human-readable description of the validation violation (e.g., 'must be a valid email address', 'required field missing')
+            required:
+                - field
+                - description
+            description: FieldViolation describes a single validation error for a specific field.
+        ValidationError:
+            type: object
+            properties:
+                violations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/FieldViolation'
+                    description: List of validation violations
+            required:
+                - violations
+            description: ValidationError is returned when request validation fails. It contains a list of field violations describing what went wrong.
+        ListArxivPapersRequest:
+            type: object
+            properties:
+                pagination:
+                    $ref: '#/components/schemas/PaginationRequest'
+                category:
+                    type: string
+                    description: arXiv category filter (e.g., "cs.AI"). Empty returns all tracked categories.
+                query:
+                    type: string
+                    description: Search query for paper titles and abstracts.
+            description: ListArxivPapersRequest specifies filters for retrieving arXiv papers.
+        PaginationRequest:
+            type: object
+            properties:
+                pageSize:
+                    type: integer
+                    maximum: 100
+                    minimum: 1
+                    format: int32
+                    description: Maximum number of items to return per page (1 to 100).
+                cursor:
+                    type: string
+                    description: Opaque cursor for fetching the next page. Empty string for the first page.
+            description: PaginationRequest specifies cursor-based pagination parameters for list endpoints.
+        ListArxivPapersResponse:
+            type: object
+            properties:
+                papers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ArxivPaper'
+                pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+            description: ListArxivPapersResponse contains arXiv papers matching the request.
+        ArxivPaper:
+            type: object
+            properties:
+                id:
+                    type: string
+                    description: arXiv paper ID (e.g., "2401.12345").
+                title:
+                    type: string
+                    description: Paper title.
+                summary:
+                    type: string
+                    description: Paper abstract (may be truncated).
+                authors:
+                    type: array
+                    items:
+                        type: string
+                        description: Author names.
+                categories:
+                    type: array
+                    items:
+                        type: string
+                        description: arXiv categories (e.g., "cs.AI", "cs.LG").
+                publishedAt:
+                    type: string
+                    format: int64
+                    description: Publication time, as Unix epoch milliseconds.
+                url:
+                    type: string
+                    description: URL to the paper.
+            description: ArxivPaper represents a research paper from arXiv.
+        PaginationResponse:
+            type: object
+            properties:
+                nextCursor:
+                    type: string
+                    description: Cursor for fetching the next page. Empty string indicates no more pages.
+                totalCount:
+                    type: integer
+                    format: int32
+                    description: Total count of items matching the query, if known. Zero if the total is unknown.
+            description: PaginationResponse contains pagination metadata returned alongside list results.
+        ListTrendingReposRequest:
+            type: object
+            properties:
+                pagination:
+                    $ref: '#/components/schemas/PaginationRequest'
+                language:
+                    type: string
+                    description: Programming language filter (e.g., "python", "typescript").
+                period:
+                    type: string
+                    description: Trending period (e.g., "daily", "weekly"). Defaults to "daily".
+            description: ListTrendingReposRequest specifies filters for retrieving trending GitHub repos.
+        ListTrendingReposResponse:
+            type: object
+            properties:
+                repos:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GithubRepo'
+                pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+            description: ListTrendingReposResponse contains trending GitHub repositories.
+        GithubRepo:
+            type: object
+            properties:
+                fullName:
+                    type: string
+                    description: Repository full name (e.g., "owner/repo").
+                description:
+                    type: string
+                    description: Repository description.
+                language:
+                    type: string
+                    description: Primary programming language.
+                stars:
+                    type: integer
+                    format: int32
+                    description: Total star count.
+                starsToday:
+                    type: integer
+                    format: int32
+                    description: Stars gained in the trending period.
+                forks:
+                    type: integer
+                    format: int32
+                    description: Number of open forks.
+                url:
+                    type: string
+                    description: Repository URL.
+            description: GithubRepo represents a trending repository from GitHub.
+        ListHackernewsItemsRequest:
+            type: object
+            properties:
+                pagination:
+                    $ref: '#/components/schemas/PaginationRequest'
+                feedType:
+                    type: string
+                    description: 'Feed type: "top", "new", "best", "ask", "show". Defaults to "top".'
+            description: ListHackernewsItemsRequest specifies filters for retrieving Hacker News items.
+        ListHackernewsItemsResponse:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HackernewsItem'
+                pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+            description: ListHackernewsItemsResponse contains Hacker News items.
+        HackernewsItem:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int32
+                    description: HN item ID.
+                title:
+                    type: string
+                    description: Item title.
+                url:
+                    type: string
+                    description: URL (empty for Ask HN / Show HN text posts).
+                score:
+                    type: integer
+                    format: int32
+                    description: Upvote score.
+                commentCount:
+                    type: integer
+                    format: int32
+                    description: Number of comments.
+                by:
+                    type: string
+                    description: Author username.
+                submittedAt:
+                    type: string
+                    format: int64
+                    description: Submission time, as Unix epoch milliseconds.
+            description: HackernewsItem represents an item from Hacker News.

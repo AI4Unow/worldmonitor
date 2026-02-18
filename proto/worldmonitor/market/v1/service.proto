@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package worldmonitor.market.v1;
+
+import "sebuf/http/annotations.proto";
+import "worldmonitor/market/v1/list_market_quotes.proto";
+import "worldmonitor/market/v1/list_crypto_quotes.proto";
+import "worldmonitor/market/v1/list_commodity_quotes.proto";
+import "worldmonitor/market/v1/get_sector_summary.proto";
+
+// MarketService provides APIs for financial market data from Finnhub, Yahoo Finance, and CoinGecko.
+service MarketService {
+  option (sebuf.http.service_config) = {base_path: "/api/market/v1"};
+
+  // ListMarketQuotes retrieves stock and index quotes.
+  rpc ListMarketQuotes(ListMarketQuotesRequest) returns (ListMarketQuotesResponse) {
+    option (sebuf.http.config) = {path: "/list-market-quotes"};
+  }
+
+  // ListCryptoQuotes retrieves cryptocurrency quotes from CoinGecko.
+  rpc ListCryptoQuotes(ListCryptoQuotesRequest) returns (ListCryptoQuotesResponse) {
+    option (sebuf.http.config) = {path: "/list-crypto-quotes"};
+  }
+
+  // ListCommodityQuotes retrieves commodity price quotes from Yahoo Finance.
+  rpc ListCommodityQuotes(ListCommodityQuotesRequest) returns (ListCommodityQuotesResponse) {
+    option (sebuf.http.config) = {path: "/list-commodity-quotes"};
+  }
+
+  // GetSectorSummary retrieves market sector performance data from Finnhub.
+  rpc GetSectorSummary(GetSectorSummaryRequest) returns (GetSectorSummaryResponse) {
+    option (sebuf.http.config) = {path: "/get-sector-summary"};
+  }
+}

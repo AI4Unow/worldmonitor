@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package worldmonitor.military.v1;
+
+import "sebuf/http/annotations.proto";
+import "worldmonitor/military/v1/list_military_flights.proto";
+import "worldmonitor/military/v1/list_military_vessels.proto";
+import "worldmonitor/military/v1/get_theater_posture.proto";
+
+// MilitaryService provides APIs for military flight and vessel tracking
+// sourced from OpenSky, Wingbits, and AIS data.
+service MilitaryService {
+  option (sebuf.http.service_config) = {base_path: "/api/military/v1"};
+
+  // ListMilitaryFlights retrieves tracked military aircraft from OpenSky and Wingbits.
+  rpc ListMilitaryFlights(ListMilitaryFlightsRequest) returns (ListMilitaryFlightsResponse) {
+    option (sebuf.http.config) = {path: "/list-military-flights"};
+  }
+
+  // ListMilitaryVessels retrieves tracked military vessels from AIS data.
+  rpc ListMilitaryVessels(ListMilitaryVesselsRequest) returns (ListMilitaryVesselsResponse) {
+    option (sebuf.http.config) = {path: "/list-military-vessels"};
+  }
+
+  // GetTheaterPosture retrieves military posture assessments for geographic theaters.
+  rpc GetTheaterPosture(GetTheaterPostureRequest) returns (GetTheaterPostureResponse) {
+    option (sebuf.http.config) = {path: "/get-theater-posture"};
+  }
+}

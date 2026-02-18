@@ -5,66 +5,48 @@
 See: .planning/PROJECT.md (updated 2026-02-18)
 
 **Core value:** Every API integration is defined in a .proto file with generated type-safe TypeScript clients and server handlers, eliminating hand-written fetch boilerplate.
-**Current focus:** Phase 1: Proto Foundation
+**Current focus:** Phase 2B: Server Runtime
 
 ## Current Position
 
-Phase: 1 of 8 (Proto Foundation) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-02-18 -- Completed 01-02 (Test domain code generation pipeline)
+Phase: 2A complete (All Domain Protos)
+Next: Phase 2B (Server Runtime)
+Status: Ready for Phase 2B
+Last activity: 2026-02-18 -- Completed Phase 2A (all 17 domain proto packages)
 
-Progress: [██░░░░░░░░] ~12%
+Progress: [████░░░░░░] ~25%
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 2
-- Average duration: 3.5min
-- Total execution time: 0.12 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-proto-foundation | 2 | 7min | 3.5min |
-
-**Recent Trend:**
-- Last 5 plans: 01-01 (4min), 01-02 (3min)
-- Trend: Stable (~3-4min per plan)
-
-*Updated after each plan completion*
+**Completed Phases:**
+- Phase 1: Proto Foundation (2 plans, 7min total)
+- Phase 2A: All Domain Protos (1 session)
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: sebuf TS server codegen (protoc-gen-ts-server) confirmed available -- all server handlers use TS server codegen, not Go
-- [Roadmap]: Environmental domain chosen as first migration target -- simplest domain, proves full pipeline cheaply
-- [Roadmap]: Markets domain tackled before batch migration -- hardest single domain proves complex cases early
-- [01-01]: buf.yaml at proto/ subdirectory (not project root) -- keeps proto tooling self-contained
-- [01-01]: OpenAPI output to docs/api/ (not docs/) -- avoids mixing with existing documentation files
-- [01-01]: LocalizableString as simple value+language pair -- WorldMonitor receives pre-localized strings
-- [01-01]: protoc-gen-ts-server installed from local source (post-v0.6.0) -- not yet in a tagged release
-- [01-02]: buf.gen.yaml managed mode with go_package_prefix -- required by Go-based protoc plugins
-- [01-02]: paths=source_relative for ts-client/ts-server plugins -- correct output directory structure
-- [01-02]: int64 for all timestamp fields (Unix epoch ms) -- no google.protobuf.Timestamp imports
+- [2A]: Dropped dual-mode adapter approach entirely — no feature flags, no parity testing, direct migration per domain
+- [2A]: 17 domains + core types (79 proto files total)
+- [2A]: `enum_value` and `INT64_ENCODING_NUMBER` sebuf annotations not yet available in v0.6.0 — using plain enums and int64 for now
+- [2A]: Enums follow existing TS union values as comments for future mapping
+- [2A]: military_vessel.proto imports military_flight.proto for shared enums (MilitaryOperator, MilitaryConfidence, MilitaryActivityType)
+- [2A]: No `oneof success/error` in responses — throw errors in handler, map with `onError`
+- [2A]: All RPCs use POST, kebab-case paths under `/api/{domain}/v1/`
+- [2A]: Test domain protos removed (served their Phase 1 purpose)
 
 ### Pending Todos
 
-None yet.
+- Phase 2B: Build server runtime (router.ts, cors.ts, error-mapper.ts, catch-all gateway)
+- Phase 2B: Implement seismology handler as first end-to-end proof
 
 ### Blockers/Concerns
 
-- Phase 4 depends on protoc-gen-ts-server being production-ready -- validate with Environmental domain batch first (Phase 3)
-- Tauri sidecar RouteDescriptor[] integration pattern needs spike during Phase 4 planning
-- RSS/News XML parsing library decision needed before Phase 7
+- `int64` time fields generate as `string` in client code — will need sebuf INT64_ENCODING_NUMBER support or manual mapping
+- @sentry/browser missing from dependencies (pre-existing, unrelated)
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 01-02-PLAN.md (Phase 01 complete)
-Resume file: .planning/phases/01-proto-foundation/01-02-SUMMARY.md
+Stopped at: Phase 2A complete, ready for Phase 2B (Server Runtime)
+Next steps: Build api/server/ infrastructure, implement seismology handler
