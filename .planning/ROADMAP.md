@@ -58,6 +58,10 @@ proto/worldmonitor/
 ### Phase 2B: Server Runtime
 **Goal**: Shared server infrastructure (router, CORS, error mapper) and catch-all gateway, validated with first handler (seismology)
 **Depends on**: Phase 2A
+**Plans:** 2 plans
+Plans:
+- [ ] 02-01-PLAN.md -- Shared server infra (router, CORS, error mapper) + seismology handler
+- [ ] 02-02-PLAN.md -- Vercel catch-all gateway + Vite dev plugin + tsconfig.api.json
 **Success Criteria**:
   1. `api/server/router.ts` matches routes from RouteDescriptor[]
   2. `api/server/cors.ts` provides CORS middleware adapted from `api/_cors.js`
