@@ -34,7 +34,7 @@ proto/worldmonitor/
 
 - [x] **Phase 1: Proto Foundation** - Buf toolchain, shared types, and code generation pipeline
 - [x] **Phase 2A: All Domain Protos** - Define all 17 domain proto packages with correct boundaries
-- [ ] **Phase 2B: Server Runtime** - Router, CORS, error mapper, catch-all gateway, first handler
+- [x] **Phase 2B: Server Runtime** - Router, CORS, error mapper, catch-all gateway, first handler
 - [ ] **Phase 2C-2S: Domain Migrations** - One sub-phase per domain, simplest first
 
 ## Phase Details
@@ -55,24 +55,27 @@ proto/worldmonitor/
   - `make generate` succeeds
   - Generated TypeScript compiles
 
-### Phase 2B: Server Runtime
+### Phase 2B: Server Runtime (COMPLETE)
 **Goal**: Shared server infrastructure (router, CORS, error mapper) and catch-all gateway, validated with first handler (seismology)
 **Depends on**: Phase 2A
+**Status**: Complete (2026-02-18)
 **Plans:** 3 plans
 Plans:
 - [x] 02-01-PLAN.md -- Shared server infra (router, CORS, error mapper) + seismology handler
 - [x] 02-02-PLAN.md -- Vercel catch-all gateway + Vite dev plugin + tsconfig.api.json
-- [ ] 02-03-PLAN.md -- Gap closure: esbuild compilation of sebuf gateway for Tauri sidecar (SERVER-05)
-**Success Criteria**:
-  1. `api/server/router.ts` matches routes from RouteDescriptor[]
-  2. `api/server/cors.ts` provides CORS middleware adapted from `api/_cors.js`
-  3. `api/server/error-mapper.ts` maps domain errors to HTTP responses
-  4. `api/[[...path]].ts` catch-all gateway mounts all routes
-  5. Seismology handler responds correctly end-to-end
+- [x] 02-03-PLAN.md -- Gap closure: esbuild compilation of sebuf gateway for Tauri sidecar (SERVER-05)
 
-### Phase 2C-2S: Domain Migrations
-**Goal**: Each domain migrated one at a time in order of complexity
+### Phase 2C: Seismology Migration
+**Goal**: First end-to-end domain migration -- enable INT64_ENCODING_NUMBER project-wide, wire frontend to generated SeismologyServiceClient via port/adapter pattern, adapt components to proto types, delete legacy endpoint
 **Depends on**: Phase 2B
+**Plans:** 2 plans
+Plans:
+- [ ] 2C-01-PLAN.md -- INT64_ENCODING_NUMBER prerequisite: annotate all proto time fields, regenerate, fix handler
+- [ ] 2C-02-PLAN.md -- Client switchover: rewrite adapter, adapt components, delete legacy endpoint + proxy
+
+### Phase 2D-2S: Remaining Domain Migrations
+**Goal**: Each remaining domain migrated one at a time in order of complexity
+**Depends on**: Phase 2C
 
 Migration order (one sub-phase each):
 1. seismology — simplest proxy, validates full pipeline
@@ -111,6 +114,7 @@ Each migration step:
 |-------|--------|-----------|
 | 1. Proto Foundation | Complete | 2026-02-18 |
 | 2A. All Domain Protos | Complete | 2026-02-18 |
-| 2B. Server Runtime | In Progress (2/3 plans) | - |
-| 2C-2S. Domain Migrations (0/17) | Not started | - |
+| 2B. Server Runtime | Complete | 2026-02-18 |
+| 2C. Seismology Migration | Planning complete | - |
+| 2D-2S. Domain Migrations (0/16) | Not started | - |
 | 2T. Legacy Cleanup | Not started | - |
