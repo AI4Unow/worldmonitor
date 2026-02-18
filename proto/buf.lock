@@ -4,6 +4,3 @@ deps:
   - name: buf.build/bufbuild/protovalidate
     commit: 80ab13bee0bf4272b6161a72bf7034e0
     digest: b5:1aa6a965be5d02d64e1d81954fa2e78ef9d1e33a0c30f92bc2626039006a94deb3a5b05f14ed8893f5c3ffce444ac008f7e968188ad225c4c29c813aa5f2daa1
-  - name: buf.build/sebmelki/sebuf
-    commit: 60489ad3941b45deb03eeea4c0a09181
-    digest: b5:b48311811af0e8a1239f845dc9fb218fd0000f1812b0dabdc2a7315b4552117111681dd2fe85094eeac6006655908c662d5d910f3455a788948b5aac85330769

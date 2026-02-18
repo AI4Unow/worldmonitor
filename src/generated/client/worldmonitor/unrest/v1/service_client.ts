@@ -10,8 +10,8 @@ export interface ListUnrestEventsRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -44,7 +44,7 @@ export interface UnrestEvent {
   country: string;
   region: string;
   location?: GeoCoordinates;
-  occurredAt: string;
+  occurredAt: number;
   severity: SeverityLevel;
   fatalities: number;
   sources: string[];
@@ -61,8 +61,8 @@ export interface UnrestCluster {
   eventCount: number;
   events: UnrestEvent[];
   severity: SeverityLevel;
-  startAt: string;
-  endAt: string;
+  startAt: number;
+  endAt: number;
   primaryCause: string;
 }
 

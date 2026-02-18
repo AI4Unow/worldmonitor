@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package worldmonitor.research.v1;
 
+import "sebuf/http/annotations.proto";
+
 // ArxivPaper represents a research paper from arXiv.
 message ArxivPaper {
   // arXiv paper ID (e.g., "2401.12345").
@@ -15,7 +17,7 @@ message ArxivPaper {
   // arXiv categories (e.g., "cs.AI", "cs.LG").
   repeated string categories = 5;
   // Publication time, as Unix epoch milliseconds.
-  int64 published_at = 6;
+  int64 published_at = 6 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // URL to the paper.
   string url = 7;
 }
@@ -53,5 +55,5 @@ message HackernewsItem {
   // Author username.
   string by = 6;
   // Submission time, as Unix epoch milliseconds.
-  int64 submitted_at = 7;
+  int64 submitted_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }

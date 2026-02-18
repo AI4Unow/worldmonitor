@@ -8,8 +8,8 @@ export interface ListEarthquakesRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -28,7 +28,7 @@ export interface Earthquake {
   magnitude: number;
   depthKm: number;
   location?: GeoCoordinates;
-  occurredAt: string;
+  occurredAt: number;
   sourceUrl: string;
 }
 

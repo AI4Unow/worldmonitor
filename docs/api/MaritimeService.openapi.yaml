@@ -142,9 +142,9 @@ components:
             type: object
             properties:
                 snapshotAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Snapshot timestamp, as Unix epoch milliseconds.
+                    description: 'Snapshot timestamp, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 densityZones:
                     type: array
                     items:
@@ -282,13 +282,13 @@ components:
                 location:
                     $ref: '#/components/schemas/GeoCoordinates'
                 issuedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Warning issue date, as Unix epoch milliseconds.
+                    description: 'Warning issue date, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 expiresAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Warning expiry date, as Unix epoch milliseconds.
+                    description: 'Warning expiry date, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 authority:
                     type: string
                     description: Warning source authority.

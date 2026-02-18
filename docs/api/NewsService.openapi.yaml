@@ -118,13 +118,13 @@ components:
             type: object
             properties:
                 start:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Start of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'Start of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 end:
-                    type: string
+                    type: integer
                     format: int64
-                    description: End of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'End of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: |-
                 TimeRange represents a time interval defined by a start and end timestamp.
                  Used for filtering data within a specific time period.
@@ -164,9 +164,9 @@ components:
                     type: string
                     description: Article URL.
                 publishedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Publication time, as Unix epoch milliseconds.
+                    description: 'Publication time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 isAlert:
                     type: boolean
                     description: Whether this article triggered an alert condition.
@@ -253,9 +253,9 @@ components:
                     format: int32
                     description: Number of headlines analyzed.
                 generatedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Summary generation time, as Unix epoch milliseconds.
+                    description: 'Summary generation time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 model:
                     type: string
                     description: AI model used for summarization.

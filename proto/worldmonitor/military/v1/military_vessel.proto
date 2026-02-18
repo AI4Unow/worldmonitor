@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.military.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 import "worldmonitor/military/v1/military_flight.proto";
 
@@ -38,7 +39,7 @@ message MilitaryVessel {
   // AIS-reported destination.
   string destination = 13;
   // Last AIS position update time, as Unix epoch milliseconds.
-  int64 last_ais_update_at = 14;
+  int64 last_ais_update_at = 14 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Minutes since last AIS signal.
   int32 ais_gap_minutes = 15;
   // Whether AIS appears disabled or suspicious.
@@ -86,7 +87,7 @@ message TheaterPosture {
   // Notable ongoing operations.
   repeated string active_operations = 5;
   // Assessment timestamp, as Unix epoch milliseconds.
-  int64 assessed_at = 6;
+  int64 assessed_at = 6 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }
 
 // MilitaryVesselType represents the classification of a military vessel.

@@ -23,7 +23,7 @@ export interface PredictionMarket {
   yesPrice: number;
   volume: number;
   url: string;
-  closesAt: string;
+  closesAt: number;
   category: string;
 }
 

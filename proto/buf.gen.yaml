@@ -9,9 +9,7 @@ managed:
     - file_option: go_package_prefix
       module: buf.build/bufbuild/protovalidate
       value: ""
-    - file_option: go_package_prefix
-      module: buf.build/sebmelki/sebuf
-      value: ""
+    # sebuf protos are now vendored locally (no BSR module override needed)
 
 plugins:
   - local: protoc-gen-ts-client

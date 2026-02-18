@@ -2,12 +2,13 @@ syntax = "proto3";
 
 package worldmonitor.maritime.v1;
 
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // VesselSnapshot represents a point-in-time view of civilian AIS vessel data.
 message VesselSnapshot {
   // Snapshot timestamp, as Unix epoch milliseconds.
-  int64 snapshot_at = 1;
+  int64 snapshot_at = 1 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Density zones showing vessel concentrations.
   repeated AisDensityZone density_zones = 2;
   // Detected AIS disruptions.
@@ -71,9 +72,9 @@ message NavigationalWarning {
   // Location of the warning.
   worldmonitor.core.v1.GeoCoordinates location = 5;
   // Warning issue date, as Unix epoch milliseconds.
-  int64 issued_at = 6;
+  int64 issued_at = 6 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Warning expiry date, as Unix epoch milliseconds.
-  int64 expires_at = 7;
+  int64 expires_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Warning source authority.
   string authority = 8;
 }

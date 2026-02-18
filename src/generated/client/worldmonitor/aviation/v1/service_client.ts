@@ -34,7 +34,7 @@ export interface AirportDelayAlert {
   totalFlights: number;
   reason: string;
   source: FlightDelaySource;
-  updatedAt: string;
+  updatedAt: number;
 }
 
 export interface GeoCoordinates {

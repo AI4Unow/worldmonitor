@@ -68,7 +68,7 @@ export interface EnergyPrice {
   price: number;
   unit: string;
   change: number;
-  priceAt: string;
+  priceAt: number;
 }
 
 export interface FieldViolation {

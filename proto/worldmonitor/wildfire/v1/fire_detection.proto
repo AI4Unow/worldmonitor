@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.wildfire.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // FireDetection represents a satellite-detected active fire from NASA FIRMS.
@@ -24,7 +25,7 @@ message FireDetection {
   // Satellite that detected the fire (e.g., "MODIS", "VIIRS", "LANDSAT").
   string satellite = 6;
   // Time the fire was detected, as Unix epoch milliseconds.
-  int64 detected_at = 7;
+  int64 detected_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }
 
 // FireConfidence represents the confidence level of a fire detection.

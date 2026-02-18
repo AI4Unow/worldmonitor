@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package worldmonitor.news.v1;
 
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // NewsItem represents a single news article from RSS feed aggregation.
@@ -13,7 +14,7 @@ message NewsItem {
   // Article URL.
   string link = 3;
   // Publication time, as Unix epoch milliseconds.
-  int64 published_at = 4;
+  int64 published_at = 4 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Whether this article triggered an alert condition.
   bool is_alert = 5;
   // Threat classification, if assessed.
@@ -41,7 +42,7 @@ message HeadlineSummary {
   // Number of headlines analyzed.
   int32 headline_count = 2;
   // Summary generation time, as Unix epoch milliseconds.
-  int64 generated_at = 3;
+  int64 generated_at = 3 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // AI model used for summarization.
   string model = 4;
 }

@@ -214,9 +214,9 @@ components:
                 components:
                     $ref: '#/components/schemas/CiiComponents'
                 computedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Last computation time, as Unix epoch milliseconds.
+                    description: 'Last computation time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: CiiScore represents a Composite Instability Index score for a region or country.
         CiiComponents:
             type: object
@@ -318,9 +318,9 @@ components:
                     format: int32
                     description: Currently open locations.
                 updatedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Last data update time, as Unix epoch milliseconds.
+                    description: 'Last data update time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 dataFreshness:
                     type: string
                     enum:
@@ -504,7 +504,7 @@ components:
                     type: string
                     description: AI model used for generation.
                 generatedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Brief generation time, as Unix epoch milliseconds.
+                    description: 'Brief generation time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: GetCountryIntelBriefResponse contains an AI-generated intelligence brief for a country.

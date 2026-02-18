@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.military.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // MilitaryFlight represents a tracked military aircraft from OpenSky or Wingbits.
@@ -45,9 +46,9 @@ message MilitaryFlight {
   // ICAO code of the destination airport.
   string destination = 17;
   // Last seen time, as Unix epoch milliseconds.
-  int64 last_seen_at = 18;
+  int64 last_seen_at = 18 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // First seen time, as Unix epoch milliseconds.
-  int64 first_seen_at = 19;
+  int64 first_seen_at = 19 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Confidence in aircraft identification.
   MilitaryConfidence confidence = 20;
   // Whether flagged for unusual activity.

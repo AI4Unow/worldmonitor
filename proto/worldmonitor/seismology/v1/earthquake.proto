@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.seismology.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // Earthquake represents a seismic event from USGS GeoJSON feed.
@@ -22,7 +23,7 @@ message Earthquake {
   // Geographic location of the epicenter.
   worldmonitor.core.v1.GeoCoordinates location = 5;
   // Time the earthquake occurred, as Unix epoch milliseconds.
-  int64 occurred_at = 6;
+  int64 occurred_at = 6 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // URL to the USGS event detail page.
   string source_url = 7;
 }

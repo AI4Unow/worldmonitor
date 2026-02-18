@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.unrest.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 import "worldmonitor/core/v1/severity.proto";
 
@@ -29,7 +30,7 @@ message UnrestEvent {
   // Geographic location of the event.
   worldmonitor.core.v1.GeoCoordinates location = 8;
   // Time the event occurred, as Unix epoch milliseconds.
-  int64 occurred_at = 9;
+  int64 occurred_at = 9 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Severity assessment.
   worldmonitor.core.v1.SeverityLevel severity = 10;
   // Reported fatalities, if any.
@@ -61,9 +62,9 @@ message UnrestCluster {
   // Overall severity of the cluster.
   worldmonitor.core.v1.SeverityLevel severity = 6;
   // Start of the cluster time window, as Unix epoch milliseconds.
-  int64 start_at = 7;
+  int64 start_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // End of the cluster time window, as Unix epoch milliseconds.
-  int64 end_at = 8;
+  int64 end_at = 8 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Primary cause or theme of the unrest.
   string primary_cause = 9;
 }

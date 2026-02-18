@@ -124,9 +124,9 @@ components:
                     type: string
                     description: URL to the Polymarket market page.
                 closesAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Market close time, as Unix epoch milliseconds. Zero if no expiry.
+                    description: 'Market close time, as Unix epoch milliseconds. Zero if no expiry.. Warning: Values > 2^53 may lose precision in JavaScript'
                 category:
                     type: string
                     description: Market category (e.g., "Politics", "Crypto", "Sports").

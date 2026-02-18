@@ -190,9 +190,9 @@ components:
                         type: string
                         description: arXiv categories (e.g., "cs.AI", "cs.LG").
                 publishedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Publication time, as Unix epoch milliseconds.
+                    description: 'Publication time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 url:
                     type: string
                     description: URL to the paper.
@@ -302,7 +302,7 @@ components:
                     type: string
                     description: Author username.
                 submittedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Submission time, as Unix epoch milliseconds.
+                    description: 'Submission time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: HackernewsItem represents an item from Hacker News.

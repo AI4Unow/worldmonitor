@@ -95,13 +95,13 @@ components:
             type: object
             properties:
                 start:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Start of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'Start of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 end:
-                    type: string
+                    type: integer
                     format: int64
-                    description: End of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'End of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: |-
                 TimeRange represents a time interval defined by a start and end timestamp.
                  Used for filtering data within a specific time period.
@@ -195,9 +195,9 @@ components:
                 location:
                     $ref: '#/components/schemas/GeoCoordinates'
                 occurredAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Time the event occurred, as Unix epoch milliseconds.
+                    description: 'Time the event occurred, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 severity:
                     type: string
                     enum:
@@ -283,13 +283,13 @@ components:
                         SeverityLevel represents a three-tier severity classification used across domains.
                          Maps to existing TS unions: 'low' | 'medium' | 'high'.
                 startAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Start of the cluster time window, as Unix epoch milliseconds.
+                    description: 'Start of the cluster time window, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 endAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: End of the cluster time window, as Unix epoch milliseconds.
+                    description: 'End of the cluster time window, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 primaryCause:
                     type: string
                     description: Primary cause or theme of the unrest.

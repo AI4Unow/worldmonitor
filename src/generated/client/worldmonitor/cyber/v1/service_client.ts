@@ -10,8 +10,8 @@ export interface ListCyberThreatsRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -35,8 +35,8 @@ export interface CyberThreat {
   severity: CriticalityLevel;
   malwareFamily: string;
   tags: string[];
-  firstSeenAt: string;
-  lastSeenAt: string;
+  firstSeenAt: number;
+  lastSeenAt: number;
 }
 
 export interface GeoCoordinates {

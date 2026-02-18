@@ -47,8 +47,8 @@ export interface MilitaryFlight {
   squawk: string;
   origin: string;
   destination: string;
-  lastSeenAt: string;
-  firstSeenAt: string;
+  lastSeenAt: number;
+  firstSeenAt: number;
   confidence: MilitaryConfidence;
   isInteresting: boolean;
   note: string;
@@ -107,7 +107,7 @@ export interface MilitaryVessel {
   speed: number;
   course: number;
   destination: string;
-  lastAisUpdateAt: string;
+  lastAisUpdateAt: number;
   aisGapMinutes: number;
   isDark: boolean;
   nearChokepoint: string;
@@ -141,7 +141,7 @@ export interface TheaterPosture {
   activeFlights: number;
   trackedVessels: number;
   activeOperations: string[];
-  assessedAt: string;
+  assessedAt: number;
 }
 
 export type MilitaryActivityType = "MILITARY_ACTIVITY_TYPE_UNSPECIFIED" | "MILITARY_ACTIVITY_TYPE_EXERCISE" | "MILITARY_ACTIVITY_TYPE_PATROL" | "MILITARY_ACTIVITY_TYPE_TRANSPORT" | "MILITARY_ACTIVITY_TYPE_DEPLOYMENT" | "MILITARY_ACTIVITY_TYPE_TRANSIT" | "MILITARY_ACTIVITY_TYPE_UNKNOWN";

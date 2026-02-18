@@ -17,7 +17,7 @@ export interface CiiScore {
   combinedScore: number;
   trend: TrendDirection;
   components?: CiiComponents;
-  computedAt: string;
+  computedAt: number;
 }
 
 export interface CiiComponents {
@@ -51,7 +51,7 @@ export interface PizzintStatus {
   activeSpikes: number;
   locationsMonitored: number;
   locationsOpen: number;
-  updatedAt: string;
+  updatedAt: number;
   dataFreshness: DataFreshness;
   locations: PizzintLocation[];
 }
@@ -111,7 +111,7 @@ export interface GetCountryIntelBriefResponse {
   countryName: string;
   brief: string;
   model: string;
-  generatedAt: string;
+  generatedAt: number;
 }
 
 export type SeverityLevel = "SEVERITY_LEVEL_UNSPECIFIED" | "SEVERITY_LEVEL_LOW" | "SEVERITY_LEVEL_MEDIUM" | "SEVERITY_LEVEL_HIGH";

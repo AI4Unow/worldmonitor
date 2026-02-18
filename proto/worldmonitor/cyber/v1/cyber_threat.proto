@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.cyber.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 import "worldmonitor/core/v1/severity.proto";
 
@@ -33,9 +34,9 @@ message CyberThreat {
   // Descriptive tags.
   repeated string tags = 10;
   // First seen time, as Unix epoch milliseconds.
-  int64 first_seen_at = 11;
+  int64 first_seen_at = 11 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Last seen time, as Unix epoch milliseconds.
-  int64 last_seen_at = 12;
+  int64 last_seen_at = 12 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }
 
 // CyberThreatType represents the classification of a cyber threat.

@@ -295,7 +295,7 @@ components:
                     format: double
                     description: Percentage change from previous period.
                 priceAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Price date, as Unix epoch milliseconds.
+                    description: 'Price date, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: EnergyPrice represents a current energy commodity price from EIA.

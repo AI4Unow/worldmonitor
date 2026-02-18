@@ -318,13 +318,13 @@ components:
                     type: string
                     description: ICAO code of the destination airport.
                 lastSeenAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Last seen time, as Unix epoch milliseconds.
+                    description: 'Last seen time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 firstSeenAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: First seen time, as Unix epoch milliseconds.
+                    description: 'First seen time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 confidence:
                     type: string
                     enum:
@@ -562,9 +562,9 @@ components:
                     type: string
                     description: AIS-reported destination.
                 lastAisUpdateAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Last AIS position update time, as Unix epoch milliseconds.
+                    description: 'Last AIS position update time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 aisGapMinutes:
                     type: integer
                     format: int32
@@ -667,7 +667,7 @@ components:
                         type: string
                         description: Notable ongoing operations.
                 assessedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Assessment timestamp, as Unix epoch milliseconds.
+                    description: 'Assessment timestamp, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: TheaterPosture represents an assessed military posture for a geographic theater.

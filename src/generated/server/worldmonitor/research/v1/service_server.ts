@@ -23,7 +23,7 @@ export interface ArxivPaper {
   summary: string;
   authors: string[];
   categories: string[];
-  publishedAt: string;
+  publishedAt: number;
   url: string;
 }
 
@@ -70,7 +70,7 @@ export interface HackernewsItem {
   score: number;
   commentCount: number;
   by: string;
-  submittedAt: string;
+  submittedAt: number;
 }
 
 export interface FieldViolation {

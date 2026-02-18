@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.intelligence.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 
 // GetCountryIntelBriefRequest specifies which country to generate a brief for.
 message GetCountryIntelBriefRequest {
@@ -25,5 +26,5 @@ message GetCountryIntelBriefResponse {
   // AI model used for generation.
   string model = 4;
   // Brief generation time, as Unix epoch milliseconds.
-  int64 generated_at = 5;
+  int64 generated_at = 5 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }

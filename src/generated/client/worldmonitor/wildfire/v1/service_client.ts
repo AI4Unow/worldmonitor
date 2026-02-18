@@ -8,8 +8,8 @@ export interface ListFireDetectionsRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -39,7 +39,7 @@ export interface FireDetection {
   frp: number;
   confidence: FireConfidence;
   satellite: string;
-  detectedAt: string;
+  detectedAt: number;
 }
 
 export interface PaginationResponse {

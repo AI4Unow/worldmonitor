@@ -20,7 +20,7 @@ export interface GetVesselSnapshotResponse {
 }
 
 export interface VesselSnapshot {
-  snapshotAt: string;
+  snapshotAt: number;
   densityZones: AisDensityZone[];
   disruptions: AisDisruption[];
 }
@@ -70,8 +70,8 @@ export interface NavigationalWarning {
   text: string;
   area: string;
   location?: GeoCoordinates;
-  issuedAt: string;
-  expiresAt: string;
+  issuedAt: number;
+  expiresAt: number;
   authority: string;
 }
 

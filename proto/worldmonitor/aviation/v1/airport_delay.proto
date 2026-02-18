@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.aviation.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // AirportDelayAlert represents a flight delay advisory at an airport.
@@ -44,7 +45,7 @@ message AirportDelayAlert {
   // Data source.
   FlightDelaySource source = 16;
   // Last data update time, as Unix epoch milliseconds.
-  int64 updated_at = 17;
+  int64 updated_at = 17 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }
 
 // AirportRegion represents the geographic region of an airport.

@@ -41,7 +41,7 @@ export const seismologyHandler: SeismologyServiceHandler = {
         latitude: f.geometry.coordinates[1] as number,
         longitude: f.geometry.coordinates[0] as number,
       },
-      occurredAt: String(f.properties.time),
+      occurredAt: f.properties.time,
       sourceUrl: (f.properties.url as string) || '',
     }));
 

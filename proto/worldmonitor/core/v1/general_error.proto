@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package worldmonitor.core.v1;
 
+import "sebuf/http/annotations.proto";
+
 // GeneralError represents application-wide error conditions that any endpoint may return.
 // Each error subtype carries the specific information needed for the client to handle it.
 message GeneralError {
@@ -47,5 +49,5 @@ message GeoBlocked {
 // Client action: Show maintenance message and estimated end time.
 message MaintenanceMode {
   // Estimated time when maintenance will end, as Unix epoch milliseconds.
-  int64 estimated_end = 1;
+  int64 estimated_end = 1 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }

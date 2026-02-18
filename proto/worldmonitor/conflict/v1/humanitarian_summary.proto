@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package worldmonitor.conflict.v1;
 
+import "sebuf/http/annotations.proto";
+
 // HumanitarianCountrySummary represents a humanitarian overview for a country from HAPI/HDX.
 message HumanitarianCountrySummary {
   // ISO 3166-1 alpha-2 country code.
@@ -19,5 +21,5 @@ message HumanitarianCountrySummary {
   // Percentage of population with access to clean water.
   double water_access_pct = 7;
   // Last data update time, as Unix epoch milliseconds.
-  int64 updated_at = 8;
+  int64 updated_at = 8 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }

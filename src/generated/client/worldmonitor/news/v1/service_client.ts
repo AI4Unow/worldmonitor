@@ -9,8 +9,8 @@ export interface ListNewsItemsRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -27,7 +27,7 @@ export interface NewsItem {
   source: string;
   title: string;
   link: string;
-  publishedAt: string;
+  publishedAt: number;
   isAlert: boolean;
   threat?: ThreatClassification;
   location?: GeoCoordinates;
@@ -62,7 +62,7 @@ export interface SummarizeHeadlinesResponse {
 export interface HeadlineSummary {
   text: string;
   headlineCount: number;
-  generatedAt: string;
+  generatedAt: number;
   model: string;
 }
 

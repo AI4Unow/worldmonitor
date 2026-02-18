@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package worldmonitor.intelligence.v1;
 
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/severity.proto";
 
 // CiiScore represents a Composite Instability Index score for a region or country.
@@ -19,7 +20,7 @@ message CiiScore {
   // Contributing component scores.
   CiiComponents components = 6;
   // Last computation time, as Unix epoch milliseconds.
-  int64 computed_at = 7;
+  int64 computed_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }
 
 // CiiComponents represents the contributing factors to a CII score.
@@ -63,7 +64,7 @@ message PizzintStatus {
   // Currently open locations.
   int32 locations_open = 6;
   // Last data update time, as Unix epoch milliseconds.
-  int64 updated_at = 7;
+  int64 updated_at = 7 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Data freshness assessment.
   DataFreshness data_freshness = 8;
   // Individual monitored locations.

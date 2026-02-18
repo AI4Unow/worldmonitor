@@ -82,13 +82,13 @@ components:
             type: object
             properties:
                 start:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Start of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'Start of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
                 end:
-                    type: string
+                    type: integer
                     format: int64
-                    description: End of the time range (inclusive), as Unix epoch milliseconds.
+                    description: 'End of the time range (inclusive), as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             description: |-
                 TimeRange represents a time interval defined by a start and end timestamp.
                  Used for filtering data within a specific time period.
@@ -171,9 +171,9 @@ components:
                     type: string
                     description: Satellite that detected the fire (e.g., "MODIS", "VIIRS", "LANDSAT").
                 detectedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Time the fire was detected, as Unix epoch milliseconds.
+                    description: 'Time the fire was detected, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             required:
                 - id
             description: FireDetection represents a satellite-detected active fire from NASA FIRMS.

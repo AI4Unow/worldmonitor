@@ -8,8 +8,8 @@ export interface ListAcledEventsRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -27,7 +27,7 @@ export interface AcledConflictEvent {
   eventType: string;
   country: string;
   location?: GeoCoordinates;
-  occurredAt: string;
+  occurredAt: number;
   fatalities: number;
   actors: string[];
   source: string;
@@ -57,8 +57,8 @@ export interface ListUcdpEventsResponse {
 
 export interface UcdpViolenceEvent {
   id: string;
-  dateStart: string;
-  dateEnd: string;
+  dateStart: number;
+  dateEnd: number;
   location?: GeoCoordinates;
   country: string;
   sideA: string;
@@ -86,7 +86,7 @@ export interface HumanitarianCountrySummary {
   internallyDisplaced: string;
   foodInsecurityLevel: string;
   waterAccessPct: number;
-  updatedAt: string;
+  updatedAt: number;
 }
 
 export type UcdpViolenceType = "UCDP_VIOLENCE_TYPE_UNSPECIFIED" | "UCDP_VIOLENCE_TYPE_STATE_BASED" | "UCDP_VIOLENCE_TYPE_NON_STATE" | "UCDP_VIOLENCE_TYPE_ONE_SIDED";

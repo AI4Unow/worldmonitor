@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package worldmonitor.economic.v1;
 
+import "sebuf/http/annotations.proto";
+
 // FredObservation represents a single data point from a FRED economic series.
 message FredObservation {
   // Observation date as YYYY-MM-DD string.
@@ -53,5 +55,5 @@ message EnergyPrice {
   // Percentage change from previous period.
   double change = 5;
   // Price date, as Unix epoch milliseconds.
-  int64 price_at = 6;
+  int64 price_at = 6 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
 }

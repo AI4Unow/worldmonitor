@@ -3,6 +3,7 @@ syntax = "proto3";
 package worldmonitor.conflict.v1;
 
 import "buf/validate/validate.proto";
+import "sebuf/http/annotations.proto";
 import "worldmonitor/core/v1/geo.proto";
 
 // UcdpViolenceEvent represents a georeferenced violence event from the UCDP dataset.
@@ -13,9 +14,9 @@ message UcdpViolenceEvent {
     (buf.validate.field).string.min_len = 1
   ];
   // Start date of the event, as Unix epoch milliseconds.
-  int64 date_start = 2;
+  int64 date_start = 2 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // End date of the event, as Unix epoch milliseconds.
-  int64 date_end = 3;
+  int64 date_end = 3 [(sebuf.http.int64_encoding) = INT64_ENCODING_NUMBER];
   // Geographic location of the event.
   worldmonitor.core.v1.GeoCoordinates location = 4;
   // Country where the event occurred.

@@ -203,9 +203,9 @@ components:
                         - FLIGHT_DELAY_SOURCE_COMPUTED
                     description: FlightDelaySource represents the source of delay data.
                 updatedAt:
-                    type: string
+                    type: integer
                     format: int64
-                    description: Last data update time, as Unix epoch milliseconds.
+                    description: 'Last data update time, as Unix epoch milliseconds.. Warning: Values > 2^53 may lose precision in JavaScript'
             required:
                 - id
             description: |-

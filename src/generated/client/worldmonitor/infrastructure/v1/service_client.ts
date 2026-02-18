@@ -8,8 +8,8 @@ export interface ListInternetOutagesRequest {
 }
 
 export interface TimeRange {
-  start: string;
-  end: string;
+  start: number;
+  end: number;
 }
 
 export interface PaginationRequest {
@@ -27,7 +27,7 @@ export interface InternetOutage {
   title: string;
   link: string;
   description: string;
-  detectedAt: string;
+  detectedAt: number;
   country: string;
   region: string;
   location?: GeoCoordinates;
@@ -35,7 +35,7 @@ export interface InternetOutage {
   categories: string[];
   cause: string;
   outageType: string;
-  endedAt: string;
+  endedAt: number;
 }
 
 export interface GeoCoordinates {
@@ -62,7 +62,7 @@ export interface ServiceStatus {
   status: ServiceOperationalStatus;
   description: string;
   url: string;
-  checkedAt: string;
+  checkedAt: number;
   latencyMs: number;
 }
 
