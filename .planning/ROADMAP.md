@@ -12,7 +12,7 @@ This roadmap migrates WorldMonitor's 80+ ad-hoc fetch-based service modules to s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Proto Foundation** - Buf toolchain, shared types, and code generation pipeline
+- [x] **Phase 1: Proto Foundation** - Buf toolchain, shared types, and code generation pipeline
 - [ ] **Phase 2: Dual-Mode Infrastructure** - Migration adapters, feature flags, circuit breaker wrapping, parity harness
 - [ ] **Phase 3: Environmental Domain Migration** - First full end-to-end domain migration proving the entire pipeline
 - [ ] **Phase 4: Server Runtime** - Generated server handlers and deployment adapters for Vite, Vercel, and Tauri
@@ -156,7 +156,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Proto Foundation | 0/TBD | Not started | - |
+| 1. Proto Foundation | 2/2 | Complete | 2026-02-18 |
 | 2. Dual-Mode Infrastructure | 0/TBD | Not started | - |
 | 3. Environmental Domain Migration | 0/TBD | Not started | - |
 | 4. Server Runtime | 0/TBD | Not started | - |

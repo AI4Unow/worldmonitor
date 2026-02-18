@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 1 of 8 (Proto Foundation)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-18 -- Completed 01-01 (Buf toolchain + core proto types)
+Phase: 1 of 8 (Proto Foundation) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-02-18 -- Completed 01-02 (Test domain code generation pipeline)
 
-Progress: [█░░░░░░░░░] ~6%
+Progress: [██░░░░░░░░] ~12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 4min
-- Total execution time: 0.07 hours
+- Total plans completed: 2
+- Average duration: 3.5min
+- Total execution time: 0.12 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-proto-foundation | 1 | 4min | 4min |
+| 01-proto-foundation | 2 | 7min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min)
-- Trend: N/A (single data point)
+- Last 5 plans: 01-01 (4min), 01-02 (3min)
+- Trend: Stable (~3-4min per plan)
 
 *Updated after each plan completion*
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - [01-01]: OpenAPI output to docs/api/ (not docs/) -- avoids mixing with existing documentation files
 - [01-01]: LocalizableString as simple value+language pair -- WorldMonitor receives pre-localized strings
 - [01-01]: protoc-gen-ts-server installed from local source (post-v0.6.0) -- not yet in a tagged release
+- [01-02]: buf.gen.yaml managed mode with go_package_prefix -- required by Go-based protoc plugins
+- [01-02]: paths=source_relative for ts-client/ts-server plugins -- correct output directory structure
+- [01-02]: int64 for all timestamp fields (Unix epoch ms) -- no google.protobuf.Timestamp imports
 
 ### Pending Todos
 
@@ -63,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 01-01-PLAN.md
-Resume file: .planning/phases/01-proto-foundation/01-01-SUMMARY.md
+Stopped at: Completed 01-02-PLAN.md (Phase 01 complete)
+Resume file: .planning/phases/01-proto-foundation/01-02-SUMMARY.md
