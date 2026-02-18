@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 ## Current Position
 
 Phase: 2B complete (Server Runtime)
-Current Plan: 02 of 02 (all complete)
-Status: Phase 2B complete — all plans executed
-Last activity: 2026-02-18 -- Completed Plan 02 (catch-all gateway + Vite plugin)
+Current Plan: 03 of 03 (all complete)
+Status: Phase 2B complete — all plans executed (including gap closure plan 03)
+Last activity: 2026-02-18 -- Completed Plan 03 (sidecar sebuf bundle compilation)
 
 Progress: [██████░░░░] ~35%
 
@@ -23,6 +23,7 @@ Progress: [██████░░░░] ~35%
 - Phase 2A: All Domain Protos (1 session)
 - Phase 2B Plan 01: Server Infrastructure (2 tasks, 2min, 4 files created)
 - Phase 2B Plan 02: Gateway Integration (2 tasks, 2min, 2 files created, 2 files modified)
+- Phase 2B Plan 03: Sidecar Sebuf Bundle (2 tasks, 3min, 1 file created, 4 files modified)
 
 ## Accumulated Context
 
@@ -42,6 +43,8 @@ Progress: [██████░░░░] ~35%
 - [2B-02]: Dynamic imports in Vite plugin to lazily load handler modules inside configureServer
 - [2B-02]: Separate tsconfig.api.json with empty types array to exclude vite/client from edge runtime code
 - [2B-02]: sebufApiPlugin placed after youtubeLivePlugin in plugin array for correct middleware ordering
+- [2B-03]: esbuild over tsc for bundling: tsc produces per-file .js output, sidecar needs single self-contained module
+- [2B-03]: Gitignore bracket escaping: used [[] character class pattern since backslash escaping is unreliable for brackets
 
 ### Pending Todos
 
@@ -55,7 +58,7 @@ Progress: [██████░░░░] ~35%
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 02-02-PLAN.md (catch-all gateway + Vite plugin) -- Phase 2B complete
+Stopped at: Completed 02-03-PLAN.md (sidecar sebuf bundle) -- Phase 2B fully complete (including gap closure)
 Resume file: .planning/phases/02-server-runtime/02-CONTEXT.md
 PR: #106 (draft) — https://github.com/koala73/worldmonitor/pull/106
 Next steps: Phase 2C+ domain handler migration (one phase per domain)
