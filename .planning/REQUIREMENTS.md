@@ -31,9 +31,9 @@ Requirements for full sebuf integration. Each maps to roadmap phases.
 ### Client Generation
 
 - [x] **CLIENT-01**: TypeScript sebuf clients generated for all 9 domain services via protoc-gen-ts-client
-- [ ] **CLIENT-02**: Generated clients use relative URLs (/api/v1/...) to work with existing fetch patch (runtime.ts) across Vercel, Vite dev, and Tauri
+- [x] **CLIENT-02**: Generated clients use relative URLs (/api/v1/...) to work with existing fetch patch (runtime.ts) across Vercel, Vite dev, and Tauri
 - [ ] **CLIENT-03**: Generated clients support custom fetch function injection for circuit breaker wrapping
-- [ ] **CLIENT-04**: Generated client response types align with existing TypeScript interfaces used by components
+- [x] **CLIENT-04**: Generated client response types align with existing TypeScript interfaces used by components
 
 ### Migration Infrastructure
 
@@ -55,8 +55,8 @@ Requirements for full sebuf integration. Each maps to roadmap phases.
 
 ### Cleanup & Consolidation
 
-- [ ] **CLEAN-01**: Legacy service files deleted after verified parity per domain (dual-mode adapter collapses to sebuf-only)
-- [ ] **CLEAN-02**: Legacy api/*.js Vercel edge functions removed after catch-all handler covers their functionality
+- [x] **CLEAN-01**: Legacy service files deleted after verified parity per domain (dual-mode adapter collapses to sebuf-only)
+- [x] **CLEAN-02**: Legacy api/*.js Vercel edge functions removed after catch-all handler covers their functionality
 - [ ] **CLEAN-03**: src/types/index.ts consolidated — domain types imported from generated proto types instead of hand-written interfaces
 - [ ] **CLEAN-04**: Dual-mode feature flags removed once all domains verified and legacy code deleted
 
@@ -100,8 +100,8 @@ Requirements for full sebuf integration. Each maps to roadmap phases.
 | DOMAIN-01 | Phase 3 | Pending |
 | DOMAIN-10 | Phase 3 | Pending |
 | CLIENT-01 | Phase 2C | Complete |
-| CLIENT-02 | Phase 3 | Pending |
-| CLIENT-04 | Phase 3 | Pending |
+| CLIENT-02 | Phase 3 | Complete |
+| CLIENT-04 | Phase 3 | Complete |
 | SERVER-01 | Phase 4 | Complete |
 | SERVER-02 | Phase 4 | Complete |
 | SERVER-03 | Phase 4 | Complete |
@@ -116,8 +116,8 @@ Requirements for full sebuf integration. Each maps to roadmap phases.
 | DOMAIN-07 | Phase 7 | Pending |
 | DOMAIN-08 | Phase 7 | Pending |
 | DOMAIN-09 | Phase 7 | Pending |
-| CLEAN-01 | Phase 8 | Pending |
-| CLEAN-02 | Phase 8 | Pending |
+| CLEAN-01 | Phase 8 | Complete |
+| CLEAN-02 | Phase 8 | Complete |
 | CLEAN-03 | Phase 8 | Pending |
 | CLEAN-04 | Phase 8 | Pending |
 

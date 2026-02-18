@@ -71,7 +71,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 2C-01-PLAN.md -- INT64_ENCODING_NUMBER prerequisite: annotate all proto time fields, regenerate, fix handler
-- [ ] 2C-02-PLAN.md -- Client switchover: rewrite adapter, adapt components, delete legacy endpoint + proxy
+- [x] 2C-02-PLAN.md -- Client switchover: rewrite adapter, adapt components, delete legacy endpoint + proxy
 
 ### Phase 2D-2S: Remaining Domain Migrations
 **Goal**: Each remaining domain migrated one at a time in order of complexity
@@ -115,6 +115,6 @@ Each migration step:
 | 1. Proto Foundation | Complete | 2026-02-18 |
 | 2A. All Domain Protos | Complete | 2026-02-18 |
 | 2B. Server Runtime | Complete | 2026-02-18 |
-| 2C. Seismology Migration | Plan 1/2 complete | 2026-02-18 (plan 01) |
+| 2C. Seismology Migration | Complete | 2026-02-18 |
 | 2D-2S. Domain Migrations (0/16) | Not started | - |
 | 2T. Legacy Cleanup | Not started | - |

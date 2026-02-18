@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 ## Current Position
 
 Phase: 2C (Seismology Migration)
-Current Plan: 01 of 01 complete
-Status: Plan 2C-01 complete -- INT64_ENCODING_NUMBER annotations applied project-wide
-Last activity: 2026-02-18 -- Plan 2C-01 executed (execute-phase)
+Current Plan: 02 of 02 complete
+Status: Phase 2C complete -- seismology fully migrated to sebuf (proto client + adapter + all consumers + legacy deleted)
+Last activity: 2026-02-18 -- Plan 2C-02 executed (execute-phase)
 
-Progress: [███████░░░] ~40%
+Progress: [████████░░] ~45%
 
 ## Performance Metrics
 
@@ -25,6 +25,7 @@ Progress: [███████░░░] ~40%
 - Phase 2B Plan 02: Gateway Integration (2 tasks, 2min, 2 files created, 2 files modified)
 - Phase 2B Plan 03: Sidecar Sebuf Bundle (2 tasks, 3min, 1 file created, 4 files modified)
 - Phase 2C Plan 01: INT64_ENCODING_NUMBER (1 task, 14min, 81 files modified)
+- Phase 2C Plan 02: Seismology Client Wiring (2 tasks, 9min, 10 files modified/deleted)
 
 ## Accumulated Context
 
@@ -50,6 +51,9 @@ Progress: [███████░░░] ~40%
 - [2C-01]: Removed buf.build/sebmelki/sebuf BSR dep, excluded vendored sebuf/ from lint
 - [2C-01]: INT64_ENCODING_NUMBER applied to 34 time fields across 20 proto files (not population counts)
 - [2C-01]: Seismology handler occurredAt returns number directly (no String() wrapper)
+- [2C-02]: Port/adapter pattern: module exports functions backed by generated client, re-exports proto type
+- [2C-02]: Consumers import Earthquake from @/services/earthquakes (the port), never the generated client directly
+- [2C-02]: Inlined earthquake time filter in Map.ts -- filterByTime signature incompatible with proto type, removed as dead code
 
 ### Pending Todos
 
@@ -63,7 +67,7 @@ Progress: [███████░░░] ~40%
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 2C-01-PLAN.md
-Resume file: .planning/phases/2C-seismology-migration/2C-01-SUMMARY.md
+Stopped at: Completed 2C-02-PLAN.md (Phase 2C complete)
+Resume file: .planning/phases/2C-seismology-migration/2C-02-SUMMARY.md
 PR: #106 (draft) — https://github.com/koala73/worldmonitor/pull/106
-Next steps: Plan 2C-02 (seismology client wiring + component adaptation) or proceed to next domain migration
+Next steps: Proceed to next domain migration phase (2D onwards)
