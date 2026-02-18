@@ -74,15 +74,15 @@ Plans:
 - [x] 2C-01-PLAN.md -- INT64_ENCODING_NUMBER prerequisite: annotate all proto time fields, regenerate, fix handler
 - [x] 2C-02-PLAN.md -- Client switchover: rewrite adapter, adapt components, delete legacy endpoint + proxy
 
-### Phase 2D: Wildfire Migration
+### Phase 2D: Wildfire Migration (COMPLETE)
 **Goal**: Migrate wildfire/FIRMS domain to sebuf -- enhance proto with region/daynight fields, implement CSV-parsing handler with env-var gating, create service module with real business logic (region stats, flatten, map-compatible output), rewire all consumers, delete legacy
 **Depends on**: Phase 2C
-**Status**: In progress
+**Status**: Complete (2026-02-18)
 **Requirements:** [DOMAIN-01, SERVER-02]
-**Plans:** 3/3 plans complete
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 2D-01-PLAN.md -- Proto enhancement + wildfire handler + gateway wiring + sidecar rebuild
-- [ ] 2D-02-PLAN.md -- Wildfires service module + consumer rewiring + legacy deletion
+- [x] 2D-02-PLAN.md -- Wildfires service module + consumer rewiring + legacy deletion
 
 ### Phase 2E-2S: Remaining Domain Migrations
 **Goal**: Each remaining domain migrated one at a time in order of complexity
@@ -127,5 +127,6 @@ Each migration step:
 | 2A. All Domain Protos | Complete | 2026-02-18 |
 | 2B. Server Runtime | Complete | 2026-02-18 |
 | 2C. Seismology Migration | Complete | 2026-02-18 |
-| 2D. Wildfire Migration | 3/3 | Complete   | 2026-02-18 | 2E-2S. Domain Migrations (0/15) | Not started | - |
+| 2D. Wildfire Migration | Complete | 2026-02-18 |
+| 2E-2S. Domain Migrations (0/15) | Not started | - |
 | 2T. Legacy Cleanup | Not started | - |
