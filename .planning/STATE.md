@@ -49,4 +49,6 @@ Progress: [████░░░░░░] ~25%
 
 Last session: 2026-02-18
 Stopped at: Phase 2A complete, ready for Phase 2B (Server Runtime)
-Next steps: Build api/server/ infrastructure, implement seismology handler
+Resume file: .planning/phases/02-server-runtime/02-CONTEXT.md
+PR: #106 (draft) — https://github.com/koala73/worldmonitor/pull/106
+Next steps: /gsd:plan-phase for Phase 2B, then execute
