@@ -1865,6 +1865,28 @@ canvas,
   margin-top: 4px;
 }
 
+.item-translate-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  color: var(--text-dim);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.item-translate-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.item-translate-btn.translated {
+  color: var(--status-live);
+  border-color: var(--status-live);
+}
+
 /* Clustering */
 .source-count {
   background: var(--accent);
@@ -4268,6 +4290,22 @@ body.playback-mode .status-dot {
   color: var(--text);
   margin-bottom: 4px;
   line-height: 1.4;
+}
+
+.prediction-question-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.prediction-question-row .prediction-question {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.prediction-translate-btn {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 a.prediction-link {
@@ -8129,6 +8167,17 @@ a.prediction-link:hover {
 .gdelt-intel-article .article-time {
   font-size: 10px;
   color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.gdelt-intel-article .article-time-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gdelt-translate-btn {
   flex-shrink: 0;
 }
 

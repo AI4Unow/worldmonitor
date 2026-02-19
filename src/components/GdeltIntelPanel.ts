@@ -1,6 +1,7 @@
 import { Panel } from './Panel';
 import { escapeHtml, sanitizeUrl } from '@/utils/sanitize';
-import { t } from '@/services/i18n';
+import { t, getCurrentLanguage } from '@/services/i18n';
+import { translateText } from '@/services';
 import {
   getIntelTopics,
   fetchTopicIntelligence,
@@ -85,22 +86,73 @@ export class GdeltIntelPanel extends Panel {
 
     const html = articles.map(article => this.renderArticle(article)).join('');
     this.content.innerHTML = `<div class="gdelt-intel-articles">${html}</div>`;
+    this.bindTranslateEvents();
   }
 
   private renderArticle(article: GdeltArticle): string {
     const domain = article.source || extractDomain(article.url);
     const timeAgo = formatArticleDate(article.date);
     const toneClass = article.tone ? (article.tone < -2 ? 'tone-negative' : article.tone > 2 ? 'tone-positive' : '') : '';
+    const currentLang = getCurrentLanguage();
+    const showTranslate = currentLang !== 'en';
+    const translateTitle = currentLang === 'vi' ? 'Dịch' : 'Translate';
 
     return `
       <a href="${sanitizeUrl(article.url)}" target="_blank" rel="noopener" class="gdelt-intel-article ${toneClass}">
         <div class="article-header">
           <span class="article-source">${escapeHtml(domain)}</span>
-          <span class="article-time">${escapeHtml(timeAgo)}</span>
+          <span class="article-time-wrap">
+            <span class="article-time">${escapeHtml(timeAgo)}</span>
+            ${showTranslate ? `<button type="button" class="item-translate-btn gdelt-translate-btn" title="${translateTitle}" data-text="${escapeHtml(article.title)}">文</button>` : ''}
+          </span>
         </div>
         <div class="article-title">${escapeHtml(article.title)}</div>
       </a>
     `;
+  }
+
+  private bindTranslateEvents(): void {
+    const buttons = this.content.querySelectorAll<HTMLElement>('.gdelt-translate-btn');
+    buttons.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const text = button.dataset.text;
+        if (text) void this.handleTranslate(button, text);
+      });
+    });
+  }
+
+  private async handleTranslate(button: HTMLElement, text: string): Promise<void> {
+    const currentLang = getCurrentLanguage();
+    if (currentLang === 'en') return;
+
+    const articleEl = button.closest('.gdelt-intel-article');
+    const titleEl = articleEl?.querySelector('.article-title') as HTMLElement | null;
+    if (!titleEl) return;
+
+    const originalText = titleEl.textContent || text;
+    button.innerHTML = '...';
+    button.style.pointerEvents = 'none';
+
+    try {
+      const translated = await translateText(text, currentLang);
+      if (!translated) {
+        button.innerHTML = '文';
+        return;
+      }
+
+      titleEl.textContent = translated;
+      titleEl.dataset.original = originalText;
+      button.innerHTML = '✓';
+      button.classList.add('translated');
+      button.title = (currentLang === 'vi' ? 'Bản gốc: ' : 'Original: ') + originalText;
+    } catch (error) {
+      console.error('[GdeltIntelPanel] Translation failed:', error);
+      button.innerHTML = '文';
+    } finally {
+      button.style.pointerEvents = 'auto';
+    }
   }
 
   public async refresh(): Promise<void> {
