@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const SUPPORTED_LANGUAGES = ['en', 'vi', 'fr', 'de', 'es', 'it', 'pl', 'pt', 'nl', 'sv', 'ru', 'ar', 'zh', 'ja'] as const;
 type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 type TranslationDictionary = Record<string, unknown>;
+const DEFAULT_LANGUAGE: SupportedLanguage = 'vi';
 
 const SUPPORTED_LANGUAGE_SET = new Set<SupportedLanguage>(SUPPORTED_LANGUAGES);
 const loadedLanguages = new Set<SupportedLanguage>();
@@ -28,11 +29,11 @@ const LOCALE_LOADERS: Record<SupportedLanguage, () => Promise<TranslationDiction
 const RTL_LANGUAGES = new Set(['ar']);
 
 function normalizeLanguage(lng: string): SupportedLanguage {
-  const base = (lng || 'en').split('-')[0]?.toLowerCase() || 'en';
+  const base = (lng || DEFAULT_LANGUAGE).split('-')[0]?.toLowerCase() || DEFAULT_LANGUAGE;
   if (SUPPORTED_LANGUAGE_SET.has(base as SupportedLanguage)) {
     return base as SupportedLanguage;
   }
-  return 'en';
+  return DEFAULT_LANGUAGE;
 }
 
 function applyDocumentDirection(lang: string): void {
@@ -60,36 +61,37 @@ async function ensureLanguageLoaded(lng: string): Promise<SupportedLanguage> {
 // Initialize i18n
 export async function initI18n(): Promise<void> {
   if (i18next.isInitialized) {
-    const currentLanguage = normalizeLanguage(i18next.language || 'en');
+    const currentLanguage = normalizeLanguage(i18next.language || DEFAULT_LANGUAGE);
     await ensureLanguageLoaded(currentLanguage);
     applyDocumentDirection(i18next.language || currentLanguage);
     return;
   }
 
-  const fallbackTranslation = await LOCALE_LOADERS.en();
-  loadedLanguages.add('en');
+  const fallbackTranslation = await LOCALE_LOADERS[DEFAULT_LANGUAGE]();
+  loadedLanguages.add(DEFAULT_LANGUAGE);
 
   await i18next
     .use(LanguageDetector)
     .init({
       resources: {
-        en: { translation: fallbackTranslation },
+        [DEFAULT_LANGUAGE]: { translation: fallbackTranslation },
       },
       supportedLngs: [...SUPPORTED_LANGUAGES],
       nonExplicitSupportedLngs: true,
-      fallbackLng: 'en',
+      fallbackLng: DEFAULT_LANGUAGE,
       debug: import.meta.env.DEV,
       interpolation: {
         escapeValue: false, // not needed for these simple strings
       },
       detection: {
-        order: ['localStorage', 'navigator'],
+        // Default to Vietnamese unless user explicitly changed language before.
+        order: ['localStorage'],
         caches: ['localStorage'],
       },
     });
 
-  const detectedLanguage = await ensureLanguageLoaded(i18next.language || 'en');
-  if (detectedLanguage !== 'en') {
+  const detectedLanguage = await ensureLanguageLoaded(i18next.language || DEFAULT_LANGUAGE);
+  if (detectedLanguage !== DEFAULT_LANGUAGE) {
     // Re-trigger translation resolution now that the detected bundle is loaded.
     await i18next.changeLanguage(detectedLanguage);
   }
@@ -112,7 +114,7 @@ export async function changeLanguage(lng: string): Promise<void> {
 
 // Helper to get current language (normalized to short code)
 export function getCurrentLanguage(): string {
-  const lang = i18next.language || 'en';
+  const lang = i18next.language || DEFAULT_LANGUAGE;
   return lang.split('-')[0]!;
 }
 
