@@ -18,13 +18,32 @@ const localeModules = import.meta.glob<TranslationDictionary>(
 );
 
 const RTL_LANGUAGES = new Set(['ar']);
+const DEFAULT_LANGUAGE: SupportedLanguage = 'vi';
+const LANGUAGE_STORAGE_KEY = 'i18nextLng';
 
 function normalizeLanguage(lng: string): SupportedLanguage {
-  const base = (lng || 'en').split('-')[0]?.toLowerCase() || 'en';
+  const base = (lng || DEFAULT_LANGUAGE).split('-')[0]?.toLowerCase() || DEFAULT_LANGUAGE;
   if (SUPPORTED_LANGUAGE_SET.has(base as SupportedLanguage)) {
     return base as SupportedLanguage;
   }
-  return 'en';
+  return DEFAULT_LANGUAGE;
+}
+
+function getInitialLanguage(): SupportedLanguage {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LANGUAGE;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (stored) {
+      return normalizeLanguage(stored);
+    }
+  } catch {
+    // Ignore storage access failures and use the default language.
+  }
+
+  return DEFAULT_LANGUAGE;
 }
 
 function applyDocumentDirection(lang: string): void {
@@ -63,8 +82,10 @@ async function ensureLanguageLoaded(lng: string): Promise<SupportedLanguage> {
 
 // Initialize i18n
 export async function initI18n(): Promise<void> {
+  const initialLanguage = getInitialLanguage();
+
   if (i18next.isInitialized) {
-    const currentLanguage = normalizeLanguage(i18next.language || 'en');
+    const currentLanguage = normalizeLanguage(i18next.language || initialLanguage);
     await ensureLanguageLoaded(currentLanguage);
     applyDocumentDirection(i18next.language || currentLanguage);
     return;
@@ -78,6 +99,7 @@ export async function initI18n(): Promise<void> {
       resources: {
         en: { translation: enTranslation as TranslationDictionary },
       },
+      lng: initialLanguage,
       supportedLngs: [...SUPPORTED_LANGUAGES],
       nonExplicitSupportedLngs: true,
       fallbackLng: 'en',
@@ -86,13 +108,14 @@ export async function initI18n(): Promise<void> {
         escapeValue: false, // not needed for these simple strings
       },
       detection: {
-        order: ['localStorage', 'navigator'],
+        order: ['localStorage'],
+        lookupLocalStorage: LANGUAGE_STORAGE_KEY,
         caches: ['localStorage'],
       },
     });
 
-  const detectedLanguage = await ensureLanguageLoaded(i18next.language || 'en');
-  if (detectedLanguage !== 'en') {
+  const detectedLanguage = await ensureLanguageLoaded(i18next.language || initialLanguage);
+  if (detectedLanguage !== initialLanguage) {
     // Re-trigger translation resolution now that the detected bundle is loaded.
     await i18next.changeLanguage(detectedLanguage);
   }
@@ -115,7 +138,7 @@ export async function changeLanguage(lng: string): Promise<void> {
 
 // Helper to get current language (normalized to short code)
 export function getCurrentLanguage(): string {
-  const lang = i18next.language || 'en';
+  const lang = i18next.language || DEFAULT_LANGUAGE;
   return lang.split('-')[0]!;
 }
 
