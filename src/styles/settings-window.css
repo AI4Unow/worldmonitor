@@ -5,13 +5,13 @@
   --settings-surface-inset: var(--surface);
   --settings-border: var(--overlay-medium);
   --settings-border-strong: var(--overlay-heavy);
-  --settings-text: #e8eaed;
-  --settings-text-secondary: #9aa0a6;
-  --settings-accent: var(--semantic-info);
-  --settings-green: #34d399;
-  --settings-yellow: #fbbf24;
+  --settings-text: var(--text);
+  --settings-text-secondary: var(--text-dim);
+  --settings-accent: var(--accent);
+  --settings-green: var(--status-live);
+  --settings-yellow: var(--status-cached);
   --settings-red: var(--semantic-critical);
-  --settings-blue: #60a5fa;
+  --settings-blue: var(--semantic-info);
 
   height: 100vh;
   background: var(--settings-bg);
@@ -408,7 +408,7 @@
 .settings-btn-primary {
   background: var(--settings-accent);
   border: 1px solid var(--settings-accent);
-  color: #fff;
+  color: var(--bg);
 }
 
 .settings-btn-primary:hover {
@@ -773,7 +773,7 @@ tr.diag-err td { color: var(--settings-red); }
 .wm-submit-btn {
   background: var(--settings-accent);
   border: 1px solid var(--settings-accent);
-  color: #fff;
+  color: var(--bg);
   font: inherit;
   font-size: 13px;
   font-weight: 600;

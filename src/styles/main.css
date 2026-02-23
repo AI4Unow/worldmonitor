@@ -6,53 +6,63 @@
    Theme Colors — overridden by [data-theme="light"] below
    ============================================================ */
 :root {
+  /* AI4U brand palette */
+  --brand-maize: #f4c542;
+  --brand-maize-hover: #e0b132;
+  --brand-maize-light: #ffe494;
+  --brand-navy: #0a1a3f;
+  --brand-navy-light: #11224d;
+  --brand-navy-lighter: #1a2f63;
+  --brand-life-blue: #1e3a5f;
+
   /* Backgrounds */
-  --bg: #0a0a0a;
-  --bg-secondary: #111;
-  --surface: #141414;
-  --surface-hover: #1e1e1e;
-  --surface-active: #1a1a2e;
+  --bg: #081634;
+  --bg-secondary: var(--brand-navy);
+  --surface: var(--brand-navy-light);
+  --surface-hover: var(--brand-navy-lighter);
+  --surface-active: var(--brand-life-blue);
 
   /* Borders */
-  --border: #2a2a2a;
-  --border-strong: #444;
-  --border-subtle: #1a1a1a;
+  --border: #28406f;
+  --border-strong: #36558f;
+  --border-subtle: #1a2b52;
 
   /* Text */
-  --text: #e8e8e8;
-  --text-secondary: #ccc;
-  --text-dim: #888;
-  --text-muted: #666;
-  --text-faint: #555;
-  --text-ghost: #444;
-  --accent: #fff;
+  --text: #f8fbff;
+  --text-secondary: #dbe7ff;
+  --text-dim: #9db5e1;
+  --text-muted: #7892c2;
+  --text-faint: #5c74a0;
+  --text-ghost: #495f89;
+  --accent: var(--brand-maize);
+  --accent-dim: rgba(244, 197, 66, 0.18);
 
   /* Overlays & shadows */
-  --overlay-subtle: rgba(255, 255, 255, 0.03);
-  --overlay-light: rgba(255, 255, 255, 0.05);
-  --overlay-medium: rgba(255, 255, 255, 0.1);
-  --overlay-heavy: rgba(255, 255, 255, 0.2);
-  --shadow-color: rgba(0, 0, 0, 0.5);
+  --overlay-subtle: rgba(255, 255, 255, 0.04);
+  --overlay-light: rgba(255, 255, 255, 0.07);
+  --overlay-medium: rgba(255, 255, 255, 0.12);
+  --overlay-heavy: rgba(255, 255, 255, 0.18);
+  --shadow-color: rgba(5, 12, 28, 0.55);
   --darken-light: rgba(0, 0, 0, 0.15);
   --darken-medium: rgba(0, 0, 0, 0.2);
   --darken-heavy: rgba(0, 0, 0, 0.3);
 
   /* Scrollbar */
-  --scrollbar-thumb: #333;
-  --scrollbar-thumb-hover: #555;
+  --scrollbar-thumb: #2d4a80;
+  --scrollbar-thumb-hover: #3d5f9f;
 
   /* Input */
-  --input-bg: #1a1a1a;
+  --input-bg: #102147;
 
   /* Panels */
-  --panel-bg: #141414;
-  --panel-border: #2a2a2a;
+  --panel-bg: #0f2046;
+  --panel-border: #28406f;
 
   /* Map */
-  --map-bg: #020a08;
-  --map-grid: #0a2a20;
-  --map-country: #0a2018;
-  --map-stroke: #0f5040;
+  --map-bg: #07122e;
+  --map-grid: #18356a;
+  --map-country: #10244a;
+  --map-stroke: #335ea8;
 
   /* Font stack */
   --font-body: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
@@ -134,55 +144,56 @@
   /* Tailwind green-600 (was #44ff88) */
   --yellow: #d97706;
   /* Tailwind amber-600 (was #ffaa00) */
+  --semantic-info: #1e4f9b;
 
   /* Backgrounds */
-  --bg: #f8f9fa;
-  --bg-secondary: #f0f1f3;
+  --bg: #f3f6fc;
+  --bg-secondary: #e9eef9;
   --surface: #ffffff;
-  --surface-hover: #f0f0f0;
-  --surface-active: #e8e8f0;
+  --surface-hover: #f2f5fb;
+  --surface-active: #e5ebf9;
 
   /* Borders */
-  --border: #d4d4d4;
-  --border-strong: #b0b0b0;
-  --border-subtle: #e8e8e8;
+  --border: #c5d3eb;
+  --border-strong: #9fb5da;
+  --border-subtle: #d9e3f5;
 
   /* Text */
-  --text: #1a1a1a;
-  --text-secondary: #333;
-  --text-dim: #6b6b6b;
-  --text-muted: #767676;
-  /* WCAG AA: 4.54:1 vs #f8f9fa */
-  --text-faint: #aaa;
-  --text-ghost: #bbb;
-  --accent: #111111;
+  --text: #0a1a3f;
+  --text-secondary: #1a2f63;
+  --text-dim: #476189;
+  --text-muted: #5b7398;
+  --text-faint: #6f85aa;
+  --text-ghost: #8497b5;
+  --accent: #b37c00;
+  --accent-dim: rgba(244, 197, 66, 0.22);
 
   /* Overlays & shadows */
-  --overlay-subtle: rgba(0, 0, 0, 0.02);
-  --overlay-light: rgba(0, 0, 0, 0.04);
-  --overlay-medium: rgba(0, 0, 0, 0.08);
-  --overlay-heavy: rgba(0, 0, 0, 0.12);
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --overlay-subtle: rgba(10, 26, 63, 0.03);
+  --overlay-light: rgba(10, 26, 63, 0.06);
+  --overlay-medium: rgba(10, 26, 63, 0.11);
+  --overlay-heavy: rgba(10, 26, 63, 0.18);
+  --shadow-color: rgba(10, 26, 63, 0.14);
   --darken-light: rgba(0, 0, 0, 0.1);
   --darken-medium: rgba(0, 0, 0, 0.15);
   --darken-heavy: rgba(0, 0, 0, 0.2);
 
   /* Scrollbar */
-  --scrollbar-thumb: #c0c0c0;
-  --scrollbar-thumb-hover: #999;
+  --scrollbar-thumb: #b7c6e1;
+  --scrollbar-thumb-hover: #91a6ca;
 
   /* Input */
-  --input-bg: #f0f0f0;
+  --input-bg: #f2f5fb;
 
   /* Panels */
   --panel-bg: #ffffff;
-  --panel-border: #d4d4d4;
+  --panel-border: #c5d3eb;
 
   /* Map */
-  --map-bg: #e8f0f8;
-  --map-grid: #b0c8d8;
-  --map-country: #f0e8d8;
-  --map-stroke: #c8b8a8;
+  --map-bg: #dfe8f8;
+  --map-grid: #adc1e4;
+  --map-country: #ebf1fc;
+  --map-stroke: #7f9ed0;
 }
 
 * {
