@@ -4,10 +4,13 @@ export type Theme = 'dark' | 'light';
 
 const STORAGE_KEY = 'worldmonitor-theme';
 const DEFAULT_THEME: Theme = 'dark';
-const THEME_META_COLOR: Record<Theme, string> = {
-  dark: '#0a1a3f',
-  light: '#f3f6fc',
-};
+
+function getMetaThemeColor(theme: Theme, variant?: string): string {
+  if (variant === 'happy') {
+    return theme === 'dark' ? '#1A2332' : '#FAFAF5';
+  }
+  return theme === 'dark' ? '#0a1a3f' : '#f3f6fc';
+}
 
 /**
  * Read the stored theme preference from localStorage.
@@ -46,7 +49,8 @@ export function setTheme(theme: Theme): void {
   }
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) {
-    meta.content = THEME_META_COLOR[theme];
+    const variant = document.documentElement.dataset.variant;
+    meta.content = getMetaThemeColor(theme, variant);
   }
   window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme } }));
 }
@@ -55,14 +59,30 @@ export function setTheme(theme: Theme): void {
  * Apply the stored theme preference to the document before components mount.
  * Only sets the data-theme attribute and meta theme-color — does NOT dispatch
  * events or invalidate the color cache (components aren't mounted yet).
+ *
+ * The inline script in index.html already handles the fast FOUC-free path.
+ * This is a safety net for cases where the inline script didn't run.
  */
 export function applyStoredTheme(): void {
-  const theme = getStoredTheme();
-  if (theme !== DEFAULT_THEME) {
-    document.documentElement.dataset.theme = theme;
+  const variant = document.documentElement.dataset.variant;
+
+  // Check raw localStorage to distinguish "no preference" from "explicitly chose dark"
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch { /* noop */ }
+  const hasExplicitPreference = raw === 'dark' || raw === 'light';
+
+  let effective: Theme;
+  if (hasExplicitPreference) {
+    // User made an explicit choice — respect it regardless of variant
+    effective = raw as Theme;
+  } else {
+    // No stored preference: happy defaults to light, others to dark
+    effective = variant === 'happy' ? 'light' : DEFAULT_THEME;
   }
+
+  document.documentElement.dataset.theme = effective;
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) {
-    meta.content = THEME_META_COLOR[theme];
+    meta.content = getMetaThemeColor(effective, variant);
   }
 }

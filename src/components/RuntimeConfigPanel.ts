@@ -40,6 +40,7 @@ const SIGNUP_URLS: Partial<Record<RuntimeSecretKey, string>> = {
   UC_DP_KEY: 'https://ucdp.uu.se/downloads/',
   OLLAMA_API_URL: 'https://ollama.com/download',
   OLLAMA_MODEL: 'https://ollama.com/library',
+  WTO_API_KEY: 'https://apiportal.wto.org/',
 };
 
 const PLAINTEXT_KEYS = new Set<RuntimeSecretKey>([
@@ -308,9 +309,7 @@ export class RuntimeConfigPanel extends Panel {
     const helpKey = `modals.runtimeConfig.help.${key}`;
     const helpRaw = t(helpKey);
     const helpText = helpRaw !== helpKey ? helpRaw : '';
-    const linkHtml = signupUrl
-      ? ` <a href="#" data-signup-url="${signupUrl}" class="runtime-secret-link" title="Get API key">&#x2197;</a>`
-      : '';
+    const showGetKey = signupUrl && !state.present && !pending;
     const validated = this.validatedKeys.get(key);
     const inputClass = pending ? (validated === false ? 'invalid' : 'valid-staged') : '';
     const checkClass = validated === true ? 'visible' : '';
@@ -337,13 +336,20 @@ export class RuntimeConfigPanel extends Panel {
       `;
     }
 
+    const getKeyHtml = showGetKey
+      ? `<a href="#" data-signup-url="${signupUrl}" class="runtime-secret-link">Get key</a>`
+      : '';
+
     return `
       <div class="runtime-secret-row">
-        <div class="runtime-secret-key"><code>${escapeHtml(key)}</code>${linkHtml}</div>
+        <div class="runtime-secret-key"><code>${escapeHtml(key)}</code></div>
         <span class="runtime-secret-status ${statusClass}">${escapeHtml(status)}</span>
         <span class="runtime-secret-check ${checkClass}">&#x2713;</span>
         ${helpText ? `<div class="runtime-secret-meta">${escapeHtml(helpText)}</div>` : ''}
-        <input type="${PLAINTEXT_KEYS.has(key) ? 'text' : 'password'}" data-secret="${key}" placeholder="${pending ? t('modals.runtimeConfig.placeholder.staged') : t('modals.runtimeConfig.placeholder.setSecret')}" autocomplete="off" ${isDesktopRuntime() ? '' : 'disabled'} class="${inputClass}" ${pending ? `value="${PLAINTEXT_KEYS.has(key) ? escapeHtml(this.pendingSecrets.get(key) || '') : MASKED_SENTINEL}"` : (PLAINTEXT_KEYS.has(key) && state.present ? `value="${escapeHtml(getRuntimeConfigSnapshot().secrets[key]?.value || '')}"` : '')}>
+        <div class="runtime-input-wrapper${showGetKey ? ' has-suffix' : ''}">
+          <input type="${PLAINTEXT_KEYS.has(key) ? 'text' : 'password'}" data-secret="${key}" placeholder="${pending ? t('modals.runtimeConfig.placeholder.staged') : t('modals.runtimeConfig.placeholder.setSecret')}" autocomplete="off" ${isDesktopRuntime() ? '' : 'disabled'} class="${inputClass}" ${pending ? `value="${PLAINTEXT_KEYS.has(key) ? escapeHtml(this.pendingSecrets.get(key) || '') : MASKED_SENTINEL}"` : (PLAINTEXT_KEYS.has(key) && state.present ? `value="${escapeHtml(getRuntimeConfigSnapshot().secrets[key]?.value || '')}"` : '')}>
+          ${getKeyHtml}
+        </div>
         ${hintText ? `<span class="runtime-secret-hint">${escapeHtml(hintText)}</span>` : ''}
       </div>
     `;
@@ -465,6 +471,19 @@ export class RuntimeConfigPanel extends Panel {
             }
           }
           this.updateFeatureCardStatus(key);
+
+          // Update inline status text to reflect staged state
+          const statusEl = input.closest('.runtime-secret-row')?.querySelector('.runtime-secret-status');
+          if (statusEl) {
+            statusEl.textContent = result.valid ? t('modals.runtimeConfig.status.staged') : t('modals.runtimeConfig.status.invalid');
+            statusEl.className = `runtime-secret-status ${result.valid ? 'staged' : 'warn'}`;
+          }
+
+          // When Ollama URL is staged, auto-fetch available models
+          if (key === 'OLLAMA_API_URL' && result.valid) {
+            const modelSelect = this.content.querySelector<HTMLSelectElement>('select[data-model-select]');
+            if (modelSelect) void this.fetchOllamaModels(modelSelect);
+          }
         } else {
           void setSecretValue(key, raw);
           input.value = '';

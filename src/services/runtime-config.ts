@@ -1,4 +1,4 @@
-import { isDesktopRuntime } from './runtime';
+import { getApiBaseUrl, isDesktopRuntime } from './runtime';
 import { invokeTauri } from './tauri-bridge';
 
 export type RuntimeSecretKey =
@@ -22,7 +22,8 @@ export type RuntimeSecretKey =
   | 'UC_DP_KEY'
   | 'OLLAMA_API_URL'
   | 'OLLAMA_MODEL'
-  | 'WORLDMONITOR_API_KEY';
+  | 'WORLDMONITOR_API_KEY'
+  | 'WTO_API_KEY';
 
 export type RuntimeFeatureId =
   | 'aiGroq'
@@ -39,7 +40,9 @@ export type RuntimeFeatureId =
   | 'openskyRelay'
   | 'finnhubMarkets'
   | 'nasaFirms'
-  | 'aiOllama';
+  | 'aiOllama'
+  | 'wtoTrade'
+  | 'supplyChain';
 
 export interface RuntimeFeatureDefinition {
   id: RuntimeFeatureId;
@@ -61,8 +64,12 @@ export interface RuntimeConfig {
 }
 
 const TOGGLES_STORAGE_KEY = 'worldmonitor-runtime-feature-toggles';
-const SIDECAR_ENV_UPDATE_URL = 'http://127.0.0.1:46123/api/local-env-update';
-const SIDECAR_SECRET_VALIDATE_URL = 'http://127.0.0.1:46123/api/local-validate-secret';
+function getSidecarEnvUpdateUrl(): string {
+  return `${getApiBaseUrl()}/api/local-env-update`;
+}
+function getSidecarSecretValidateUrl(): string {
+  return `${getApiBaseUrl()}/api/local-validate-secret`;
+}
 
 const defaultToggles: Record<RuntimeFeatureId, boolean> = {
   aiGroq: true,
@@ -80,6 +87,8 @@ const defaultToggles: Record<RuntimeFeatureId, boolean> = {
   finnhubMarkets: true,
   nasaFirms: true,
   aiOllama: true,
+  wtoTrade: true,
+  supplyChain: true,
 };
 
 export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
@@ -189,6 +198,20 @@ export const RUNTIME_FEATURES: RuntimeFeatureDefinition[] = [
     description: 'Fire Information for Resource Management System satellite data.',
     requiredSecrets: ['NASA_FIRMS_API_KEY'],
     fallback: 'FIRMS fire layer uses public VIIRS feed.',
+  },
+  {
+    id: 'wtoTrade',
+    name: 'WTO trade policy data',
+    description: 'Trade restrictions, tariff trends, barriers, and flows from WTO.',
+    requiredSecrets: ['WTO_API_KEY'],
+    fallback: 'Trade policy panel shows disabled state.',
+  },
+  {
+    id: 'supplyChain',
+    name: 'Supply Chain Intelligence',
+    description: 'Shipping rates via FRED Baltic Dry Index. Chokepoints and minerals use public data.',
+    requiredSecrets: ['FRED_API_KEY'],
+    fallback: 'Chokepoints and minerals always available; shipping requires FRED key.',
   },
 ];
 
@@ -396,7 +419,7 @@ async function pushSecretToSidecar(key: string, value: string): Promise<void> {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(SIDECAR_ENV_UPDATE_URL, {
+  const response = await fetch(getSidecarEnvUpdateUrl(), {
     method: 'POST',
     headers,
     body: JSON.stringify({ key, value: value || null }),
@@ -435,7 +458,7 @@ export async function verifySecretWithApi(
   }
 
   try {
-    const response = await callSidecarWithAuth(SIDECAR_SECRET_VALIDATE_URL, {
+    const response = await callSidecarWithAuth(getSidecarSecretValidateUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, value: value.trim(), context }),

@@ -13,7 +13,11 @@ import type {
   FredObservation,
 } from '../../../../src/generated/server/worldmonitor/economic/v1/service_server';
 
+import { cachedFetchJson } from '../../../_shared/redis';
+
 const FRED_API_BASE = 'https://api.stlouisfed.org/fred';
+const REDIS_CACHE_KEY = 'economic:fred:v1';
+const REDIS_CACHE_TTL = 3600; // 1 hr — FRED data updates infrequently
 
 async function fetchFredSeries(req: GetFredSeriesRequest): Promise<FredSeries | undefined> {
   try {
@@ -92,8 +96,12 @@ export async function getFredSeries(
   req: GetFredSeriesRequest,
 ): Promise<GetFredSeriesResponse> {
   try {
-    const series = await fetchFredSeries(req);
-    return { series };
+    const cacheKey = `${REDIS_CACHE_KEY}:${req.seriesId}:${req.limit || 0}`;
+    const result = await cachedFetchJson<GetFredSeriesResponse>(cacheKey, REDIS_CACHE_TTL, async () => {
+      const series = await fetchFredSeries(req);
+      return series ? { series } : null;
+    });
+    return result || { series: undefined };
   } catch {
     return { series: undefined };
   }

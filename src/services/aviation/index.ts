@@ -89,8 +89,8 @@ function toDisplayAlert(proto: ProtoAlert): AirportDelayAlert {
 
 // --- Client + circuit breaker ---
 
-const client = new AviationServiceClient('', { fetch: fetch.bind(globalThis) });
-const breaker = createCircuitBreaker<AirportDelayAlert[]>({ name: 'FAA Flight Delays' });
+const client = new AviationServiceClient('', { fetch: (...args) => globalThis.fetch(...args) });
+const breaker = createCircuitBreaker<AirportDelayAlert[]>({ name: 'FAA Flight Delays', cacheTtlMs: 5 * 60 * 1000, persistCache: true });
 
 // --- Main fetch (public API) ---
 

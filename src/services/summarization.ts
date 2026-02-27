@@ -26,10 +26,15 @@ export interface SummarizationResult {
 
 export type ProgressCallback = (step: number, total: number, message: string) => void;
 
+export interface SummarizeOptions {
+  skipCloudProviders?: boolean;  // true = skip Ollama/Groq/OpenRouter, go straight to browser T5
+  skipBrowserFallback?: boolean; // true = skip browser T5 fallback
+}
+
 // ── Sebuf client (replaces direct fetch to /api/{provider}-summarize) ──
 
-const newsClient = new NewsServiceClient('', { fetch: fetch.bind(globalThis) });
-const summaryBreaker = createCircuitBreaker<SummarizeArticleResponse>({ name: 'News Summarization' });
+const newsClient = new NewsServiceClient('', { fetch: (...args) => globalThis.fetch(...args) });
+const summaryBreaker = createCircuitBreaker<SummarizeArticleResponse>({ name: 'News Summarization', cacheTtlMs: 0 });
 
 const emptySummaryFallback: SummarizeArticleResponse = { summary: '', provider: '', model: '', cached: false, skipped: false, fallback: true, tokens: 0, reason: '', error: '', errorType: '' };
 
@@ -102,8 +107,8 @@ async function tryBrowserT5(headlines: string[], modelId?: string): Promise<Summ
     }
     lastAttemptedProvider = 'browser';
 
-    const combinedText = headlines.slice(0, 6).map(h => h.slice(0, 80)).join('. ');
-    const prompt = `Summarize the main themes from these news headlines in 2 sentences: ${combinedText}`;
+    const combinedText = headlines.slice(0, 5).map(h => h.slice(0, 80)).join('. ');
+    const prompt = `Summarize the most important headline in 2 concise sentences (under 60 words): ${combinedText}`;
 
     const [summary] = await mlWorker.summarize([prompt], modelId);
 
@@ -152,14 +157,15 @@ export async function generateSummary(
   headlines: string[],
   onProgress?: ProgressCallback,
   geoContext?: string,
-  lang: string = 'en'
+  lang: string = 'en',
+  options?: SummarizeOptions,
 ): Promise<SummarizationResult | null> {
   if (!headlines || headlines.length < 2) {
     return null;
   }
 
   lastAttemptedProvider = 'none';
-  const result = await generateSummaryInternal(headlines, onProgress, geoContext, lang);
+  const result = await generateSummaryInternal(headlines, onProgress, geoContext, lang, options);
 
   // Track at generateSummary return only (not inside tryApiProvider) to avoid
   // double-counting beta comparison traffic. Only the winning provider is recorded.
@@ -177,6 +183,7 @@ async function generateSummaryInternal(
   onProgress: ProgressCallback | undefined,
   geoContext: string | undefined,
   lang: string,
+  options?: SummarizeOptions,
 ): Promise<SummarizationResult | null> {
   if (BETA_MODE) {
     const modelReady = mlWorker.isAvailable && mlWorker.isModelLoaded('summarization-beta');
@@ -184,37 +191,43 @@ async function generateSummaryInternal(
     if (modelReady) {
       const totalSteps = 1 + API_PROVIDERS.length;
       // Model already loaded -- use browser T5-small first
-      onProgress?.(1, totalSteps, 'Running local AI model (beta)...');
-      const browserResult = await tryBrowserT5(headlines, 'summarization-beta');
-      if (browserResult) {
-        console.log('[BETA] Browser T5-small:', browserResult.summary);
-        const groqProvider = API_PROVIDERS.find(p => p.provider === 'groq');
-        if (groqProvider) tryApiProvider(groqProvider, headlines, geoContext).then(r => {
-          if (r) console.log('[BETA] Groq comparison:', r.summary);
-        }).catch(() => {});
+      if (!options?.skipBrowserFallback) {
+        onProgress?.(1, totalSteps, 'Running local AI model (beta)...');
+        const browserResult = await tryBrowserT5(headlines, 'summarization-beta');
+        if (browserResult) {
+          console.log('[BETA] Browser T5-small:', browserResult.summary);
+          const groqProvider = API_PROVIDERS.find(p => p.provider === 'groq');
+          if (groqProvider && !options?.skipCloudProviders) tryApiProvider(groqProvider, headlines, geoContext).then(r => {
+            if (r) console.log('[BETA] Groq comparison:', r.summary);
+          }).catch(() => {});
 
-        return browserResult;
+          return browserResult;
+        }
       }
 
       // Warm model failed inference -- fallback through API providers
-      const chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, undefined, onProgress, 2, totalSteps);
-      if (chainResult) return chainResult;
+      if (!options?.skipCloudProviders) {
+        const chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, undefined, onProgress, 2, totalSteps);
+        if (chainResult) return chainResult;
+      }
     } else {
       const totalSteps = API_PROVIDERS.length + 2;
       console.log('[BETA] T5-small not loaded yet, using cloud providers first');
-      if (mlWorker.isAvailable) {
+      if (mlWorker.isAvailable && !options?.skipBrowserFallback) {
         mlWorker.loadModel('summarization-beta').catch(() => {});
       }
 
       // API providers while model loads
-      const chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, undefined, onProgress, 1, totalSteps);
-      if (chainResult) {
-        if (chainResult.provider === 'groq') console.log('[BETA] Groq:', chainResult.summary);
-        return chainResult;
+      if (!options?.skipCloudProviders) {
+        const chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, undefined, onProgress, 1, totalSteps);
+        if (chainResult) {
+          if (chainResult.provider === 'groq') console.log('[BETA] Groq:', chainResult.summary);
+          return chainResult;
+        }
       }
 
       // Last resort: try browser T5 (may have finished loading by now)
-      if (mlWorker.isAvailable) {
+      if (mlWorker.isAvailable && !options?.skipBrowserFallback) {
         onProgress?.(API_PROVIDERS.length + 1, totalSteps, 'Waiting for local AI model...');
         const browserResult = await tryBrowserT5(headlines, 'summarization-beta');
         if (browserResult) return browserResult;
@@ -229,13 +242,18 @@ async function generateSummaryInternal(
 
   // Normal mode: API chain -> Browser T5
   const totalSteps = API_PROVIDERS.length + 1;
+  let chainResult: SummarizationResult | null = null;
 
-  const chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, lang, onProgress, 1, totalSteps);
+  if (!options?.skipCloudProviders) {
+    chainResult = await runApiChain(API_PROVIDERS, headlines, geoContext, lang, onProgress, 1, totalSteps);
+  }
   if (chainResult) return chainResult;
 
-  onProgress?.(totalSteps, totalSteps, 'Loading local AI model...');
-  const browserResult = await tryBrowserT5(headlines);
-  if (browserResult) return browserResult;
+  if (!options?.skipBrowserFallback) {
+    onProgress?.(totalSteps, totalSteps, 'Loading local AI model...');
+    const browserResult = await tryBrowserT5(headlines);
+    if (browserResult) return browserResult;
+  }
 
   console.warn('[Summarization] All providers failed');
   return null;

@@ -11,6 +11,8 @@ import type {
   AisDisruptionSeverity,
 } from '../../../../src/generated/server/worldmonitor/maritime/v1/service_server';
 
+import { CHROME_UA } from '../../../_shared/constants';
+
 // ========================================================================
 // Helpers
 // ========================================================================
@@ -22,6 +24,20 @@ function getRelayBaseUrl(): string | null {
     .replace('wss://', 'https://')
     .replace('ws://', 'http://')
     .replace(/\/$/, '');
+}
+
+function getRelayRequestHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'User-Agent': CHROME_UA,
+  };
+  const relaySecret = process.env.RELAY_SHARED_SECRET;
+  if (relaySecret) {
+    const relayHeader = (process.env.RELAY_AUTH_HEADER || 'x-relay-key').toLowerCase();
+    headers[relayHeader] = relaySecret;
+    headers.Authorization = `Bearer ${relaySecret}`;
+  }
+  return headers;
 }
 
 const DISRUPTION_TYPE_MAP: Record<string, AisDisruptionType> = {
@@ -74,7 +90,7 @@ async function fetchVesselSnapshotFromRelay(): Promise<VesselSnapshot | undefine
     const response = await fetch(
       `${relayBaseUrl}/ais/snapshot?candidates=false`,
       {
-        headers: { Accept: 'application/json' },
+        headers: getRelayRequestHeaders(),
         signal: AbortSignal.timeout(10000),
       },
     );

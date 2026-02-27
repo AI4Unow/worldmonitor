@@ -10,10 +10,15 @@ import type {
   EtfFlow,
 } from '../../../../src/generated/server/worldmonitor/market/v1/service_server';
 import { UPSTREAM_TIMEOUT_MS, type YahooChartResponse } from './_shared';
+import { CHROME_UA, yahooGate } from '../../../_shared/constants';
+import { cachedFetchJson } from '../../../_shared/redis';
 
 // ========================================================================
 // Constants and cache
 // ========================================================================
+
+const REDIS_CACHE_KEY = 'market:etf-flows:v1';
+const REDIS_CACHE_TTL = 600; // 10 min — daily volume data, slow-moving
 
 const ETF_LIST = [
   { ticker: 'IBIT', issuer: 'BlackRock' },
@@ -30,7 +35,7 @@ const ETF_LIST = [
 
 let etfCache: ListEtfFlowsResponse | null = null;
 let etfCacheTimestamp = 0;
-const ETF_CACHE_TTL = 900_000; // 15 minutes
+const ETF_CACHE_TTL = 900_000; // 15 minutes (in-memory fallback)
 
 // ========================================================================
 // Helpers
@@ -38,10 +43,11 @@ const ETF_CACHE_TTL = 900_000; // 15 minutes
 
 async function fetchEtfChart(ticker: string): Promise<YahooChartResponse | null> {
   try {
+    await yahooGate();
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=5d&interval=1d`;
     const resp = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': CHROME_UA,
       },
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
@@ -109,18 +115,30 @@ export async function listEtfFlows(
   }
 
   try {
-    const charts = await Promise.allSettled(
-      ETF_LIST.map(etf => fetchEtfChart(etf.ticker)),
-    );
-
+  const result = await cachedFetchJson<ListEtfFlowsResponse>(REDIS_CACHE_KEY, REDIS_CACHE_TTL, async () => {
     const etfs: EtfFlow[] = [];
-    for (let i = 0; i < ETF_LIST.length; i++) {
-      const settled = charts[i]!;
-      const chart = settled.status === 'fulfilled' ? settled.value : null;
+    let misses = 0;
+    for (const etf of ETF_LIST) {
+      const chart = await fetchEtfChart(etf.ticker);
       if (chart) {
-        const parsed = parseEtfChartData(chart, ETF_LIST[i]!.ticker, ETF_LIST[i]!.issuer);
-        if (parsed) etfs.push(parsed);
+        const parsed = parseEtfChartData(chart, etf.ticker, etf.issuer);
+        if (parsed) etfs.push(parsed); else misses++;
+      } else {
+        misses++;
       }
+      if (misses >= 3 && etfs.length === 0) break;
+    }
+
+    // Stale-while-revalidate: if Yahoo rate-limited all calls, serve cached data
+    if (etfs.length === 0 && etfCache) {
+      return etfCache;
+    }
+
+    if (etfs.length === 0) {
+      const rateLimited = misses >= 3;
+      return rateLimited
+        ? { timestamp: new Date().toISOString(), etfs: [], rateLimited: true }
+        : null;
     }
 
     const totalVolume = etfs.reduce((sum, e) => sum + e.volume, 0);
@@ -130,7 +148,7 @@ export async function listEtfFlows(
 
     etfs.sort((a, b) => b.volume - a.volume);
 
-    const result: ListEtfFlowsResponse = {
+    return {
       timestamp: new Date().toISOString(),
       summary: {
         etfCount: etfs.length,
@@ -142,13 +160,27 @@ export async function listEtfFlows(
       },
       etfs,
     };
+  });
 
+  if (result) {
     etfCache = result;
     etfCacheTimestamp = now;
-    return result;
+  }
+
+  return result || etfCache || {
+    timestamp: new Date().toISOString(),
+    summary: {
+      etfCount: 0,
+      totalVolume: 0,
+      totalEstFlow: 0,
+      netDirection: 'UNAVAILABLE',
+      inflowCount: 0,
+      outflowCount: 0,
+    },
+    etfs: [],
+  };
   } catch {
-    if (etfCache) return etfCache;
-    return {
+    return etfCache || {
       timestamp: new Date().toISOString(),
       summary: {
         etfCount: 0,

@@ -46,6 +46,14 @@ import { createIntelligenceServiceRoutes } from '../../../src/generated/server/w
 import { intelligenceHandler } from '../../../server/worldmonitor/intelligence/v1/handler';
 import { createMilitaryServiceRoutes } from '../../../src/generated/server/worldmonitor/military/v1/service_server';
 import { militaryHandler } from '../../../server/worldmonitor/military/v1/handler';
+import { createPositiveEventsServiceRoutes } from '../../../src/generated/server/worldmonitor/positive_events/v1/service_server';
+import { positiveEventsHandler } from '../../../server/worldmonitor/positive-events/v1/handler';
+import { createGivingServiceRoutes } from '../../../src/generated/server/worldmonitor/giving/v1/service_server';
+import { givingHandler } from '../../../server/worldmonitor/giving/v1/handler';
+import { createTradeServiceRoutes } from '../../../src/generated/server/worldmonitor/trade/v1/service_server';
+import { tradeHandler } from '../../../server/worldmonitor/trade/v1/handler';
+import { createSupplyChainServiceRoutes } from '../../../src/generated/server/worldmonitor/supply_chain/v1/service_server';
+import { supplyChainHandler } from '../../../server/worldmonitor/supply-chain/v1/handler';
 
 import type { ServerOptions } from '../../../src/generated/server/worldmonitor/seismology/v1/service_server';
 
@@ -69,6 +77,10 @@ const allRoutes = [
   ...createNewsServiceRoutes(newsHandler, serverOptions),
   ...createIntelligenceServiceRoutes(intelligenceHandler, serverOptions),
   ...createMilitaryServiceRoutes(militaryHandler, serverOptions),
+  ...createPositiveEventsServiceRoutes(positiveEventsHandler, serverOptions),
+  ...createGivingServiceRoutes(givingHandler, serverOptions),
+  ...createTradeServiceRoutes(tradeHandler, serverOptions),
+  ...createSupplyChainServiceRoutes(supplyChainHandler, serverOptions),
 ];
 
 const router = createRouter(allRoutes);

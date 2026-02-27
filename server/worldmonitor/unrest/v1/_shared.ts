@@ -10,7 +10,6 @@ import type {
 // API URLs
 // ========================================================================
 
-export const ACLED_API_URL = 'https://acleddata.com/api/acled/read';
 export const GDELT_GEO_URL = 'https://api.gdeltproject.org/api/v2/geo/geo';
 
 // ========================================================================
@@ -73,8 +72,8 @@ export function deduplicateEvents(events: UnrestEvent[]): UnrestEvent[] {
   for (const event of events) {
     const lat = event.location?.latitude ?? 0;
     const lon = event.location?.longitude ?? 0;
-    const latKey = Math.round(lat * 2) / 2;
-    const lonKey = Math.round(lon * 2) / 2;
+    const latKey = Math.round(lat * 10) / 10;
+    const lonKey = Math.round(lon * 10) / 10;
     const dateKey = new Date(event.occurredAt).toISOString().split('T')[0];
     const key = `${latKey}:${lonKey}:${dateKey}`;
 

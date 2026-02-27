@@ -19,6 +19,10 @@ import {
   extractClosePrices,
   extractAlignedPriceVolume,
 } from './_shared';
+import { cachedFetchJson } from '../../../_shared/redis';
+
+const REDIS_CACHE_KEY = 'economic:macro-signals:v1';
+const REDIS_CACHE_TTL = 300; // 5 min — matches in-memory TTL
 
 const MACRO_CACHE_TTL = 300; // 5 minutes in seconds
 let macroSignalsCached: GetMacroSignalsResponse | null = null;
@@ -46,20 +50,23 @@ function buildFallbackResult(): GetMacroSignalsResponse {
 
 async function computeMacroSignals(): Promise<GetMacroSignalsResponse> {
   const yahooBase = 'https://query1.finance.yahoo.com/v8/finance/chart';
-  const [jpyChart, btcChart, qqqChart, xlpChart, fearGreed, mempoolHash] = await Promise.allSettled([
-    fetchJSON(`${yahooBase}/JPY=X?range=1y&interval=1d`),
-    fetchJSON(`${yahooBase}/BTC-USD?range=1y&interval=1d`),
-    fetchJSON(`${yahooBase}/QQQ?range=1y&interval=1d`),
-    fetchJSON(`${yahooBase}/XLP?range=1y&interval=1d`),
+
+  // Yahoo calls go through global yahooGate() in fetchJSON — sequential to avoid 429
+  const jpyChart = await fetchJSON(`${yahooBase}/JPY=X?range=1y&interval=1d`).catch(() => null);
+  const btcChart = await fetchJSON(`${yahooBase}/BTC-USD?range=1y&interval=1d`).catch(() => null);
+  const qqqChart = await fetchJSON(`${yahooBase}/QQQ?range=1y&interval=1d`).catch(() => null);
+  const xlpChart = await fetchJSON(`${yahooBase}/XLP?range=1y&interval=1d`).catch(() => null);
+  // Non-Yahoo calls can go in parallel
+  const [fearGreed, mempoolHash] = await Promise.allSettled([
     fetchJSON('https://api.alternative.me/fng/?limit=30&format=json'),
     fetchJSON('https://mempool.space/api/v1/mining/hashrate/1m'),
   ]);
 
-  const jpyPrices = jpyChart.status === 'fulfilled' ? extractClosePrices(jpyChart.value) : [];
-  const btcPrices = btcChart.status === 'fulfilled' ? extractClosePrices(btcChart.value) : [];
-  const btcAligned = btcChart.status === 'fulfilled' ? extractAlignedPriceVolume(btcChart.value) : [];
-  const qqqPrices = qqqChart.status === 'fulfilled' ? extractClosePrices(qqqChart.value) : [];
-  const xlpPrices = xlpChart.status === 'fulfilled' ? extractClosePrices(xlpChart.value) : [];
+  const jpyPrices = jpyChart ? extractClosePrices(jpyChart) : [];
+  const btcPrices = btcChart ? extractClosePrices(btcChart) : [];
+  const btcAligned = btcChart ? extractAlignedPriceVolume(btcChart) : [];
+  const qqqPrices = qqqChart ? extractClosePrices(qqqChart) : [];
+  const xlpPrices = xlpChart ? extractClosePrices(xlpChart) : [];
 
   // 1. Liquidity Signal (JPY 30d ROC)
   const jpyRoc30 = rateOfChange(jpyPrices, 30);
@@ -178,6 +185,11 @@ async function computeMacroSignals(): Promise<GetMacroSignalsResponse> {
 
   const verdict = totalCount === 0 ? 'UNKNOWN' : (bullishCount / totalCount >= 0.57 ? 'BUY' : 'CASH');
 
+  // Stale-while-revalidate: if Yahoo rate-limited all calls, serve cached data
+  if (totalCount === 0 && macroSignalsCached && !macroSignalsCached.unavailable) {
+    return macroSignalsCached;
+  }
+
   return {
     timestamp: new Date().toISOString(),
     verdict,
@@ -234,10 +246,23 @@ export async function getMacroSignals(
   }
 
   try {
-    const result = await computeMacroSignals();
-    macroSignalsCached = result;
+    // Redis shared cache (cross-instance) with in-flight dedup via cachedFetchJson
+    const result = await cachedFetchJson<GetMacroSignalsResponse>(REDIS_CACHE_KEY, REDIS_CACHE_TTL, async () => {
+      const computed = await computeMacroSignals();
+      return (!computed.unavailable && computed.totalCount > 0) ? computed : null;
+    });
+
+    if (result && !result.unavailable && result.totalCount > 0) {
+      macroSignalsCached = result;
+      macroSignalsCacheTimestamp = now;
+      return result;
+    }
+
+    // cachedFetchJson returned null: all data unavailable, serve stale or fallback
+    const fallback = macroSignalsCached || buildFallbackResult();
+    macroSignalsCached = fallback;
     macroSignalsCacheTimestamp = now;
-    return result;
+    return fallback;
   } catch {
     const fallback = macroSignalsCached || buildFallbackResult();
     macroSignalsCached = fallback;

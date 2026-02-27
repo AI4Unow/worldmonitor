@@ -10,6 +10,11 @@ import type {
 } from '../../../../src/generated/server/worldmonitor/intelligence/v1/service_server';
 
 import { UPSTREAM_TIMEOUT_MS } from './_shared';
+import { CHROME_UA } from '../../../_shared/constants';
+import { cachedFetchJson } from '../../../_shared/redis';
+
+const REDIS_CACHE_KEY = 'intel:pizzint:v1';
+const REDIS_CACHE_TTL = 600; // 10 min
 
 // ========================================================================
 // Constants
@@ -27,14 +32,17 @@ export async function getPizzintStatus(
   _ctx: ServerContext,
   req: GetPizzintStatusRequest,
 ): Promise<GetPizzintStatusResponse> {
-  // Fetch PizzINT dashboard data
-  let pizzint: PizzintStatus | undefined;
-  try {
-    const resp = await fetch(PIZZINT_API, {
-      headers: { Accept: 'application/json', 'User-Agent': 'WorldMonitor/1.0' },
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-    });
-    if (resp.ok) {
+  const cacheKey = `${REDIS_CACHE_KEY}:${req.includeGdelt ? 'gdelt' : 'base'}`;
+
+  const result = await cachedFetchJson<GetPizzintStatusResponse>(cacheKey, REDIS_CACHE_TTL, async () => {
+    let pizzint: PizzintStatus | undefined;
+    try {
+      const resp = await fetch(PIZZINT_API, {
+        headers: { Accept: 'application/json', 'User-Agent': CHROME_UA },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
+      if (!resp.ok) throw new Error(`PizzINT API returned ${resp.status}`);
+
       const raw = (await resp.json()) as {
         success?: boolean;
         data?: Array<{
@@ -101,44 +109,48 @@ export async function getPizzintStatus(
           locations,
         };
       }
-    }
-  } catch { /* pizzint unavailable */ }
+    } catch (_) { /* PizzINT unavailable — continue to GDELT */ }
 
-  // Fetch GDELT tension pairs
-  let tensionPairs: GdeltTensionPair[] = [];
-  if (req.includeGdelt) {
-    try {
-      const url = `${GDELT_BATCH_API}?pairs=${encodeURIComponent(DEFAULT_GDELT_PAIRS)}&method=gpr`;
-      const resp = await fetch(url, {
-        headers: { Accept: 'application/json', 'User-Agent': 'WorldMonitor/1.0' },
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      });
-      if (resp.ok) {
-        const raw = (await resp.json()) as Record<string, Array<{ t: number; v: number }>>;
-        tensionPairs = Object.entries(raw).map(([pairKey, dataPoints]) => {
-          const countries = pairKey.split('_');
-          const latest = dataPoints[dataPoints.length - 1]!;
-          const prev = dataPoints.length > 1 ? dataPoints[dataPoints.length - 2]! : latest;
-          const change = prev.v > 0 ? ((latest.v - prev.v) / prev.v) * 100 : 0;
-          const trend: TrendDirection = change > 5
-            ? 'TREND_DIRECTION_RISING'
-            : change < -5
-              ? 'TREND_DIRECTION_FALLING'
-              : 'TREND_DIRECTION_STABLE';
-
-          return {
-            id: pairKey,
-            countries,
-            label: countries.map((c) => c.toUpperCase()).join(' - '),
-            score: latest?.v ?? 0,
-            trend,
-            changePercent: Math.round(change * 10) / 10,
-            region: 'global',
-          };
+    // Fetch GDELT tension pairs
+    let tensionPairs: GdeltTensionPair[] = [];
+    if (req.includeGdelt) {
+      try {
+        const url = `${GDELT_BATCH_API}?pairs=${encodeURIComponent(DEFAULT_GDELT_PAIRS)}&method=gpr`;
+        const resp = await fetch(url, {
+          headers: { Accept: 'application/json', 'User-Agent': CHROME_UA },
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
         });
-      }
-    } catch { /* gdelt unavailable */ }
-  }
+        if (resp.ok) {
+          const raw = (await resp.json()) as Record<string, Array<{ t: number; v: number }>>;
+          tensionPairs = Object.entries(raw).map(([pairKey, dataPoints]) => {
+            const countries = pairKey.split('_');
+            const latest = dataPoints[dataPoints.length - 1]!;
+            const prev = dataPoints.length > 1 ? dataPoints[dataPoints.length - 2]! : latest;
+            const change = prev.v > 0 ? ((latest.v - prev.v) / prev.v) * 100 : 0;
+            const trend: TrendDirection = change > 5
+              ? 'TREND_DIRECTION_RISING'
+              : change < -5
+                ? 'TREND_DIRECTION_FALLING'
+                : 'TREND_DIRECTION_STABLE';
 
-  return { pizzint, tensionPairs };
+            return {
+              id: pairKey,
+              countries,
+              label: countries.map((c) => c.toUpperCase()).join(' - '),
+              score: latest?.v ?? 0,
+              trend,
+              changePercent: Math.round(change * 10) / 10,
+              region: 'global',
+            };
+          });
+        }
+      } catch { /* gdelt unavailable */ }
+    }
+
+    // Only cache if PizzINT data was retrieved
+    if (!pizzint) return null;
+    return { pizzint, tensionPairs };
+  });
+
+  return result || { pizzint: undefined, tensionPairs: [] };
 }

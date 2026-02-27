@@ -15,6 +15,35 @@ async function fetchWithTimeout(url, options, timeoutMs = 15000) {
   }
 }
 
+function getRelayBaseUrl() {
+  const relayUrl = process.env.WS_RELAY_URL || '';
+  if (!relayUrl) return '';
+  return relayUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace(/\/$/, '');
+}
+
+function getRelayHeaders(baseHeaders = {}) {
+  const headers = { ...baseHeaders };
+  const relaySecret = process.env.RELAY_SHARED_SECRET || '';
+  if (relaySecret) {
+    const relayHeader = (process.env.RELAY_AUTH_HEADER || 'x-relay-key').toLowerCase();
+    headers[relayHeader] = relaySecret;
+    headers.Authorization = `Bearer ${relaySecret}`;
+  }
+  return headers;
+}
+
+async function fetchViaRailway(feedUrl, timeoutMs) {
+  const relayBaseUrl = getRelayBaseUrl();
+  if (!relayBaseUrl) return null;
+  const relayUrl = `${relayBaseUrl}/rss?url=${encodeURIComponent(feedUrl)}`;
+  return fetchWithTimeout(relayUrl, {
+    headers: getRelayHeaders({
+      'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+      'User-Agent': 'WorldMonitor-RSS-Proxy/1.0',
+    }),
+  }, timeoutMs);
+}
+
 // Allowed RSS feed domains for security
 const ALLOWED_DOMAINS = [
   'feeds.bbci.co.uk',
@@ -22,6 +51,7 @@ const ALLOWED_DOMAINS = [
   'feeds.npr.org',
   'news.google.com',
   'www.aljazeera.com',
+  'www.aljazeera.net',
   'rss.cnn.com',
   'hnrss.org',
   'feeds.arstechnica.com',
@@ -76,6 +106,7 @@ const ALLOWED_DOMAINS = [
   'www.techmeme.com',
   'www.darkreading.com',
   'www.schneier.com',
+  'www.ransomware.live',
   'rss.politico.com',
   'www.anandtech.com',
   'www.tomshardware.com',
@@ -139,12 +170,35 @@ const ALLOWED_DOMAINS = [
   // International News Sources
   'www.france24.com',
   'www.euronews.com',
+  'de.euronews.com',
+  'es.euronews.com',
+  'fr.euronews.com',
+  'it.euronews.com',
+  'pt.euronews.com',
+  'ru.euronews.com',
   'www.lemonde.fr',
   'rss.dw.com',
+  'www.bild.de',
   'www.africanews.com',
+  'fr.africanews.com',
+  // Nigeria
+  'www.premiumtimesng.com',
+  'www.vanguardngr.com',
+  'www.channelstv.com',
+  'dailytrust.com',
+  'www.thisdaylive.com',
+  // Greek
+  'www.naftemporiki.gr',
+  'www.in.gr',
+  'www.iefimerida.gr',
   'www.lasillavacia.com',
   'www.channelnewsasia.com',
+  'japantoday.com',
   'www.thehindu.com',
+  'indianexpress.com',
+  'www.indianewsnetwork.com',
+  'www.twz.com',
+  'gcaptain.com',
   // International Organizations
   'news.un.org',
   'www.iaea.org',
@@ -177,7 +231,31 @@ const ALLOWED_DOMAINS = [
   'www.fao.org',
   'worldbank.org',
   'www.imf.org',
-  // Regional locale feeds (tr, pl, ru, th, vi)
+  // International news (various languages)
+  'www.bbc.com',
+  'www.spiegel.de',
+  'www.tagesschau.de',
+  'newsfeed.zeit.de',
+  'feeds.elpais.com',
+  'e00-elmundo.uecdn.es',
+  'www.repubblica.it',
+  'www.ansa.it',
+  'xml2.corriereobjects.it',
+  'feeds.nos.nl',
+  'www.nrc.nl',
+  'www.telegraaf.nl',
+  'www.dn.se',
+  'www.svd.se',
+  'www.svt.se',
+  'www.asahi.com',
+  'www.clarin.com',
+  'oglobo.globo.com',
+  'feeds.folha.uol.com.br',
+  'www.eltiempo.com',
+  'www.eluniversal.com.mx',
+  'www.jeuneafrique.com',
+  'www.lorientlejour.com',
+  // Regional locale feeds (tr, pl, ru, th, vi, pt)
   'www.hurriyet.com.tr',
   'tvn24.pl',
   'www.polsatnews.pl',
@@ -187,12 +265,40 @@ const ALLOWED_DOMAINS = [
   'www.bangkokpost.com',
   'vnexpress.net',
   'www.abc.net.au',
+  'islandtimes.org',
+  'www.brasilparalelo.com.br',
+  // Mexico & LatAm Security
+  'mexiconewsdaily.com',
+  'animalpolitico.com',
+  'www.proceso.com.mx',
+  'www.milenio.com',
+  'insightcrime.org',
   // Additional
   'news.ycombinator.com',
   // Finance variant
   'seekingalpha.com',
   'www.coindesk.com',
   'cointelegraph.com',
+  // Happy variant — positive news sources
+  'www.goodnewsnetwork.org',
+  'www.positive.news',
+  'reasonstobecheerful.world',
+  'www.optimistdaily.com',
+  'www.upworthy.com',
+  'www.dailygood.org',
+  'www.goodgoodgood.co',
+  'www.good.is',
+  'www.sunnyskyz.com',
+  'thebetterindia.com',
+  'singularityhub.com',
+  'humanprogress.org',
+  'greatergood.berkeley.edu',
+  'www.onlygoodnewsdaily.com',
+  'www.sciencedaily.com',
+  'feeds.nature.com',
+  'www.nature.com',
+  'www.livescience.com',
+  'www.newscientist.com',
 ];
 
 export default async function handler(req) {
@@ -216,8 +322,11 @@ export default async function handler(req) {
   try {
     const parsedUrl = new URL(feedUrl);
 
-    // Security: Check if domain is allowed
-    if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
+    // Security: Check if domain is allowed (normalize www prefix)
+    const hostname = parsedUrl.hostname;
+    const bare = hostname.replace(/^www\./, '');
+    const withWww = hostname.startsWith('www.') ? hostname : `www.${hostname}`;
+    if (!ALLOWED_DOMAINS.includes(hostname) && !ALLOWED_DOMAINS.includes(bare) && !ALLOWED_DOMAINS.includes(withWww)) {
       return new Response(JSON.stringify({ error: 'Domain not allowed' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -228,48 +337,50 @@ export default async function handler(req) {
     const isGoogleNews = feedUrl.includes('news.google.com');
     const timeout = isGoogleNews ? 20000 : 12000;
 
-    const response = await fetchWithTimeout(feedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'manual',
-    }, timeout);
+    const fetchDirect = async () => {
+      const response = await fetchWithTimeout(feedUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'manual',
+      }, timeout);
 
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location');
-      if (location) {
-        try {
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (location) {
           const redirectUrl = new URL(location, feedUrl);
           if (!ALLOWED_DOMAINS.includes(redirectUrl.hostname)) {
-            return new Response(JSON.stringify({ error: 'Redirect to disallowed domain' }), {
-              status: 403,
-              headers: { 'Content-Type': 'application/json', ...corsHeaders },
-            });
+            throw new Error('Redirect to disallowed domain');
           }
-          const redirectResponse = await fetchWithTimeout(redirectUrl.href, {
+          return fetchWithTimeout(redirectUrl.href, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
               'Accept': 'application/rss+xml, application/xml, text/xml, */*',
               'Accept-Language': 'en-US,en;q=0.9',
             },
           }, timeout);
-          const data = await redirectResponse.text();
-          return new Response(data, {
-            status: redirectResponse.status,
-            headers: {
-              'Content-Type': 'application/xml',
-              'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=300',
-              ...corsHeaders,
-            },
-          });
-        } catch {
-          return new Response(JSON.stringify({ error: 'Invalid redirect' }), {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          });
         }
+      }
+
+      return response;
+    };
+
+    let response;
+    let usedRelay = false;
+    try {
+      response = await fetchDirect();
+    } catch (directError) {
+      response = await fetchViaRailway(feedUrl, timeout);
+      usedRelay = !!response;
+      if (!response) throw directError;
+    }
+
+    if (!response.ok && !usedRelay) {
+      const relayResponse = await fetchViaRailway(feedUrl, timeout);
+      if (relayResponse && relayResponse.ok) {
+        response = relayResponse;
       }
     }
 
@@ -277,8 +388,8 @@ export default async function handler(req) {
     return new Response(data, {
       status: response.status,
       headers: {
-        'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
+        'Content-Type': response.headers.get('content-type') || 'application/xml',
+        'Cache-Control': response.headers.get('cache-control') || 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
         ...corsHeaders,
       },
     });

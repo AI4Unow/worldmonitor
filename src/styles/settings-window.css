@@ -12,6 +12,7 @@
   --settings-yellow: var(--status-cached);
   --settings-red: var(--semantic-critical);
   --settings-blue: var(--semantic-info);
+  --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Fira Code', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
 
   height: 100vh;
   background: var(--settings-bg);
@@ -231,7 +232,7 @@
   color: var(--settings-text);
   padding: 8px 12px;
   font-size: 13px;
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   transition: border-color 0.15s;
 }
 
@@ -253,7 +254,7 @@
   color: var(--settings-text);
   padding: 8px 12px;
   font-size: 13px;
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   width: 100%;
   cursor: pointer;
   transition: border-color 0.15s;
@@ -342,7 +343,7 @@
   border-color: var(--settings-red);
 }
 
-/* ── Signup link icon ── */
+/* ── Key name ── */
 .runtime-secret-key {
   display: flex;
   align-items: center;
@@ -350,18 +351,36 @@
   grid-area: key;
 }
 
+/* ── Input wrapper with optional "Get key" suffix ── */
+.settings-runtime-panel .runtime-input-wrapper {
+  grid-area: input;
+  position: relative;
+}
+
+.settings-runtime-panel .runtime-input-wrapper.has-suffix input {
+  padding-right: 80px;
+}
+
 .runtime-secret-link {
-  color: var(--settings-text-secondary);
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--settings-accent);
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 4px;
+  padding: 4px 10px;
   text-decoration: none;
-  font-size: 13px;
-  line-height: 1;
-  opacity: 0.5;
-  transition: opacity 0.15s, color 0.15s;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .runtime-secret-link:hover {
-  color: var(--settings-accent);
-  opacity: 1;
+  background: rgba(96, 165, 250, 0.2);
+  border-color: var(--settings-accent);
 }
 
 /* ── Footer ── */
@@ -561,7 +580,7 @@
 .diag-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
 }
 
@@ -707,7 +726,7 @@ tr.diag-err td { color: var(--settings-red); }
   color: var(--settings-text);
   padding: 8px 36px 8px 12px;
   font-size: 13px;
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   transition: border-color 0.15s;
   box-sizing: border-box;
 }

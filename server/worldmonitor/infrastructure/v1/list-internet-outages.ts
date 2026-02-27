@@ -9,6 +9,11 @@ import type {
 } from '../../../../src/generated/server/worldmonitor/infrastructure/v1/service_server';
 
 import { UPSTREAM_TIMEOUT_MS } from './_shared';
+import { CHROME_UA } from '../../../_shared/constants';
+import { cachedFetchJson } from '../../../_shared/redis';
+
+const REDIS_CACHE_KEY = 'infra:outages:v1';
+const REDIS_CACHE_TTL = 300; // 5 min — Cloudflare Radar rate-limited
 
 // ========================================================================
 // Constants
@@ -113,71 +118,69 @@ export async function listInternetOutages(
   req: ListInternetOutagesRequest,
 ): Promise<ListInternetOutagesResponse> {
   try {
-    const token = process.env.CLOUDFLARE_API_TOKEN;
-    if (!token) {
-      return { outages: [], pagination: undefined };
-    }
+    const result = await cachedFetchJson<ListInternetOutagesResponse>(REDIS_CACHE_KEY, REDIS_CACHE_TTL, async () => {
+      const token = process.env.CLOUDFLARE_API_TOKEN;
+      if (!token) return null;
 
-    const response = await fetch(
-      `${CLOUDFLARE_RADAR_URL}?dateRange=7d&limit=50`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      },
-    );
-    if (!response.ok) {
-      return { outages: [], pagination: undefined };
-    }
+      const response = await fetch(
+        `${CLOUDFLARE_RADAR_URL}?dateRange=7d&limit=50`,
+        {
+          headers: { Authorization: `Bearer ${token}`, 'User-Agent': CHROME_UA },
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+        },
+      );
+      if (!response.ok) return null;
 
-    const data: CloudflareResponse = await response.json();
-    if (data.configured === false || !data.success || data.errors?.length) {
-      return { outages: [], pagination: undefined };
-    }
+      const data: CloudflareResponse = await response.json();
+      if (data.configured === false || !data.success || data.errors?.length) return null;
 
-    const outages: InternetOutage[] = [];
+      const outages: InternetOutage[] = [];
 
-    for (const raw of data.result?.annotations || []) {
-      if (!raw.locations?.length) continue;
-      const countryCode = raw.locations[0];
-      if (!countryCode) continue;
+      for (const raw of data.result?.annotations || []) {
+        if (!raw.locations?.length) continue;
+        const countryCode = raw.locations[0];
+        if (!countryCode) continue;
 
-      const coords = COUNTRY_COORDS[countryCode];
-      if (!coords) continue;
+        const coords = COUNTRY_COORDS[countryCode];
+        if (!coords) continue;
 
-      const countryName = raw.locationsDetails?.[0]?.name ?? countryCode;
+        const countryName = raw.locationsDetails?.[0]?.name ?? countryCode;
 
-      const categories: string[] = ['Cloudflare Radar'];
-      if (raw.outage?.outageCause) categories.push(raw.outage.outageCause.replace(/_/g, ' '));
-      if (raw.outage?.outageType) categories.push(raw.outage.outageType);
-      for (const asn of raw.asnsDetails?.slice(0, 2) || []) {
-        if (asn.name) categories.push(asn.name);
+        const categories: string[] = ['Cloudflare Radar'];
+        if (raw.outage?.outageCause) categories.push(raw.outage.outageCause.replace(/_/g, ' '));
+        if (raw.outage?.outageType) categories.push(raw.outage.outageType);
+        for (const asn of raw.asnsDetails?.slice(0, 2) || []) {
+          if (asn.name) categories.push(asn.name);
+        }
+
+        outages.push({
+          id: `cf-${raw.id}`,
+          title: raw.scope ? `${raw.scope} outage in ${countryName}` : `Internet disruption in ${countryName}`,
+          link: raw.linkedUrl || 'https://radar.cloudflare.com/outage-center',
+          description: raw.description,
+          detectedAt: toEpochMs(raw.startDate),
+          country: countryName,
+          region: '',
+          location: { latitude: coords[0], longitude: coords[1] },
+          severity: mapOutageSeverity(raw.outage?.outageType),
+          categories,
+          cause: raw.outage?.outageCause || '',
+          outageType: raw.outage?.outageType || '',
+          endedAt: toEpochMs(raw.endDate),
+        });
       }
 
-      outages.push({
-        id: `cf-${raw.id}`,
-        title: raw.scope ? `${raw.scope} outage in ${countryName}` : `Internet disruption in ${countryName}`,
-        link: raw.linkedUrl || 'https://radar.cloudflare.com/outage-center',
-        description: raw.description,
-        detectedAt: toEpochMs(raw.startDate),
-        country: countryName,
-        region: '',
-        location: { latitude: coords[0], longitude: coords[1] },
-        severity: mapOutageSeverity(raw.outage?.outageType),
-        categories,
-        cause: raw.outage?.outageCause || '',
-        outageType: raw.outage?.outageType || '',
-        endedAt: toEpochMs(raw.endDate),
-      });
-    }
+      return outages.length > 0 ? { outages, pagination: undefined } : null;
+    });
 
-    // Apply optional country filter
+    const outages = result?.outages || [];
+
+    // Always apply filters (to both cached and fresh data)
     let filtered = outages;
     if (req.country) {
       const target = req.country.toLowerCase();
       filtered = outages.filter((o) => o.country.toLowerCase().includes(target));
     }
-
-    // Apply optional time range filter
     if (req.timeRange?.start) {
       filtered = filtered.filter((o) => o.detectedAt >= req.timeRange!.start);
     }

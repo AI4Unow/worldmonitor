@@ -10,25 +10,31 @@ const PLATFORM_PATTERNS = {
   'macos-arm64': (name) => name.endsWith('_aarch64.dmg'),
   'macos-x64': (name) => name.endsWith('_x64.dmg') && !name.includes('setup'),
   'linux-appimage': (name) => name.endsWith('_amd64.AppImage'),
+  'linux-appimage-arm64': (name) => name.endsWith('_aarch64.AppImage'),
 };
 
-const VARIANT_PREFIXES = {
-  full: ['world-monitor'],
-  world: ['world-monitor'],
-  tech: ['tech-monitor'],
-  finance: ['finance-monitor'],
+const VARIANT_IDENTIFIERS = {
+  full: ['worldmonitor'],
+  world: ['worldmonitor'],
+  tech: ['techmonitor'],
+  finance: ['financemonitor'],
 };
+
+function canonicalAssetName(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
 
 function findAssetForVariant(assets, variant, platformMatcher) {
-  const prefixes = VARIANT_PREFIXES[variant] ?? null;
-  if (!prefixes) return null;
+  const identifiers = VARIANT_IDENTIFIERS[variant] ?? null;
+  if (!identifiers) return null;
 
   return assets.find((asset) => {
-    const assetName = String(asset?.name || '').toLowerCase();
-    const hasVariantPrefix = prefixes.some((prefix) =>
-      assetName.startsWith(`${prefix.toLowerCase()}_`) || assetName.startsWith(`${prefix.toLowerCase()}-`)
+    const assetName = String(asset?.name || '');
+    const normalizedAssetName = canonicalAssetName(assetName);
+    const hasVariantIdentifier = identifiers.some((identifier) =>
+      normalizedAssetName.includes(identifier)
     );
-    return hasVariantPrefix && platformMatcher(String(asset?.name || ''));
+    return hasVariantIdentifier && platformMatcher(assetName);
   }) ?? null;
 }
 

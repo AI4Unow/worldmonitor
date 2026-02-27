@@ -72,6 +72,7 @@ import {
   GULF_INVESTMENTS,
 } from '@/config';
 import type { GulfInvestment } from '@/types';
+import { resolveTradeRouteSegments, TRADE_ROUTES as TRADE_ROUTES_LIST, type TradeRouteSegment } from '@/config/trade-routes';
 import { MapPopup, type PopupType } from './MapPopup';
 import {
   updateHotspotEscalation,
@@ -82,7 +83,13 @@ import {
 } from '@/services/hotspot-escalation';
 import { getCountryScore } from '@/services/country-instability';
 import { getAlertsNearLocation } from '@/services/geo-convergence';
+import type { PositiveGeoEvent } from '@/services/positive-events-geo';
+import type { KindnessPoint } from '@/services/kindness-data';
+import type { HappinessData } from '@/services/happiness-data';
+import type { RenewableInstallation } from '@/services/renewable-installations';
+import type { SpeciesRecovery } from '@/services/conservation-data';
 import { getCountriesGeoJson, getCountryAtCoordinates } from '@/services/country-geometry';
+import type { FeatureCollection, Geometry } from 'geojson';
 
 export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | 'all';
 export type DeckMapView = 'global' | 'america' | 'mena' | 'eu' | 'asia' | 'latam' | 'africa' | 'oceania';
@@ -136,8 +143,13 @@ const MAP_INTERACTION_MODE: MapInteractionMode =
   import.meta.env.VITE_MAP_INTERACTION_MODE === 'flat' ? 'flat' : '3d';
 
 // Theme-aware basemap vector style URLs (English labels, no local scripts)
-const DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-const LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+// Happy variant uses self-hosted warm styles; default uses CARTO CDN
+const DARK_STYLE = SITE_VARIANT === 'happy'
+  ? '/map-styles/happy-dark.json'
+  : 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const LIGHT_STYLE = SITE_VARIANT === 'happy'
+  ? '/map-styles/happy-light.json'
+  : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
 // Zoom thresholds for layer visibility and labels (matches old Map.ts)
 // Zoom-dependent layer visibility and labels
@@ -268,6 +280,17 @@ export class DeckGLMap {
   private ucdpEvents: UcdpGeoEvent[] = [];
   private displacementFlows: DisplacementFlow[] = [];
   private climateAnomalies: ClimateAnomaly[] = [];
+  private tradeRouteSegments: TradeRouteSegment[] = resolveTradeRouteSegments();
+  private positiveEvents: PositiveGeoEvent[] = [];
+  private kindnessPoints: KindnessPoint[] = [];
+
+  // Phase 8 overlay data
+  private happinessScores: Map<string, number> = new Map();
+  private happinessYear = 0;
+  private happinessSource = '';
+  private speciesRecoveryZones: Array<SpeciesRecovery & { recoveryZone: { name: string; lat: number; lon: number } }> = [];
+  private renewableInstallations: RenewableInstallation[] = [];
+  private countriesGeoJsonData: FeatureCollection<Geometry> | null = null;
 
   // Country highlight state
   private countryGeoJsonLoaded = false;
@@ -324,9 +347,6 @@ export class DeckGLMap {
     this.state = initialState;
     this.hotspots = [...INTEL_HOTSPOTS];
 
-    this.rebuildTechHQSupercluster();
-    this.rebuildDatacenterSupercluster();
-
     this.debouncedRebuildLayers = debounce(() => {
       if (this.renderPaused || this.webglLost || !this.maplibreMap) return;
       this.maplibreMap.resize();
@@ -351,6 +371,8 @@ export class DeckGLMap {
     this.initMapLibre();
 
     this.maplibreMap?.on('load', () => {
+      this.rebuildTechHQSupercluster();
+      this.rebuildDatacenterSupercluster();
       this.initDeck();
       this.loadCountryBoundaries();
       this.render();
@@ -375,6 +397,12 @@ export class DeckGLMap {
     mapContainer.id = 'deckgl-basemap';
     mapContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%;';
     wrapper.appendChild(mapContainer);
+
+    // Map attribution (CARTO basemap + OpenStreetMap data)
+    const attribution = document.createElement('div');
+    attribution.className = 'map-attribution';
+    attribution.innerHTML = '© <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+    wrapper.appendChild(attribution);
 
     this.container.appendChild(wrapper);
   }
@@ -1097,7 +1125,7 @@ export class DeckGLMap {
     }
 
     // APT Groups layer (geopolitical variant only - always shown, no toggle)
-    if (SITE_VARIANT !== 'tech') {
+    if (SITE_VARIANT !== 'tech' && SITE_VARIANT !== 'happy') {
       layers.push(this.createAPTGroupsLayer());
     }
 
@@ -1114,6 +1142,15 @@ export class DeckGLMap {
     // Climate anomalies heatmap layer
     if (mapLayers.climate && this.climateAnomalies.length > 0) {
       layers.push(this.createClimateHeatmapLayer());
+    }
+
+    // Trade routes layer
+    if (mapLayers.tradeRoutes) {
+      layers.push(this.createTradeRoutesLayer());
+      layers.push(this.createTradeChokepointsLayer());
+    } else {
+      this.layerCache.delete('trade-routes-layer');
+      this.layerCache.delete('trade-chokepoints-layer');
     }
 
     // Tech variant layers (Supercluster-based deck.gl layers for HQs and events)
@@ -1138,6 +1175,30 @@ export class DeckGLMap {
     // Gulf FDI investments layer
     if (mapLayers.gulfInvestments) {
       layers.push(this.createGulfInvestmentsLayer());
+    }
+
+    // Positive events layer (happy variant)
+    if (mapLayers.positiveEvents && this.positiveEvents.length > 0) {
+      layers.push(...this.createPositiveEventsLayers());
+    }
+
+    // Kindness layer (happy variant -- green baseline pulses + real kindness events)
+    if (mapLayers.kindness && this.kindnessPoints.length > 0) {
+      layers.push(...this.createKindnessLayers());
+    }
+
+    // Phase 8: Happiness choropleth (rendered below point markers)
+    if (mapLayers.happiness) {
+      const choropleth = this.createHappinessChoroplethLayer();
+      if (choropleth) layers.push(choropleth);
+    }
+    // Phase 8: Species recovery zones
+    if (mapLayers.speciesRecovery && this.speciesRecoveryZones.length > 0) {
+      layers.push(this.createSpeciesRecoveryLayer());
+    }
+    // Phase 8: Renewable energy installations
+    if (mapLayers.renewableInstallations && this.renewableInstallations.length > 0) {
+      layers.push(this.createRenewableInstallationsLayer());
     }
 
     // News geo-locations (always shown if data exists)
@@ -2207,7 +2268,9 @@ export class DeckGLMap {
   private needsPulseAnimation(now = Date.now()): boolean {
     return this.hasRecentNews(now)
       || this.hasRecentRiot(now)
-      || this.hotspots.some(h => h.hasBreaking);
+      || this.hotspots.some(h => h.hasBreaking)
+      || this.positiveEvents.some(e => e.count > 10)
+      || this.kindnessPoints.some(p => p.type === 'real');
   }
 
   private syncPulseAnimation(now = Date.now()): void {
@@ -2319,6 +2382,170 @@ export class DeckGLMap {
     }
 
     return layers;
+  }
+
+  private createPositiveEventsLayers(): Layer[] {
+    const layers: Layer[] = [];
+
+    const getCategoryColor = (category: string): [number, number, number, number] => {
+      switch (category) {
+        case 'nature-wildlife':
+        case 'humanity-kindness':
+          return [34, 197, 94, 200]; // green
+        case 'science-health':
+        case 'innovation-tech':
+        case 'climate-wins':
+          return [234, 179, 8, 200]; // gold
+        case 'culture-community':
+          return [139, 92, 246, 200]; // purple
+        default:
+          return [34, 197, 94, 200]; // green default
+      }
+    };
+
+    // Dot layer (tooltip on hover via getTooltip)
+    layers.push(new ScatterplotLayer({
+      id: 'positive-events-layer',
+      data: this.positiveEvents,
+      getPosition: (d: PositiveGeoEvent) => [d.lon, d.lat],
+      getRadius: 12000,
+      getFillColor: (d: PositiveGeoEvent) => getCategoryColor(d.category),
+      radiusMinPixels: 5,
+      radiusMaxPixels: 10,
+      pickable: true,
+    }));
+
+    // Gentle pulse ring for significant events (count > 8)
+    const significantEvents = this.positiveEvents.filter(e => e.count > 8);
+    if (significantEvents.length > 0) {
+      const pulse = 1.0 + 0.4 * (0.5 + 0.5 * Math.sin((this.pulseTime || Date.now()) / 800));
+      layers.push(new ScatterplotLayer({
+        id: 'positive-events-pulse',
+        data: significantEvents,
+        getPosition: (d: PositiveGeoEvent) => [d.lon, d.lat],
+        getRadius: 15000,
+        radiusScale: pulse,
+        radiusMinPixels: 8,
+        radiusMaxPixels: 24,
+        stroked: true,
+        filled: false,
+        getLineColor: (d: PositiveGeoEvent) => getCategoryColor(d.category),
+        lineWidthMinPixels: 1.5,
+        pickable: false,
+        updateTriggers: { radiusScale: this.pulseTime },
+      }));
+    }
+
+    return layers;
+  }
+
+  private createKindnessLayers(): Layer[] {
+    const layers: Layer[] = [];
+    if (this.kindnessPoints.length === 0) return layers;
+
+    // Dot layer (tooltip on hover via getTooltip)
+    layers.push(new ScatterplotLayer<KindnessPoint>({
+      id: 'kindness-layer',
+      data: this.kindnessPoints,
+      getPosition: (d: KindnessPoint) => [d.lon, d.lat],
+      getRadius: 12000,
+      getFillColor: [74, 222, 128, 200] as [number, number, number, number],
+      radiusMinPixels: 5,
+      radiusMaxPixels: 10,
+      pickable: true,
+    }));
+
+    // Pulse for real events
+    const pulse = 1.0 + 0.4 * (0.5 + 0.5 * Math.sin((this.pulseTime || Date.now()) / 800));
+    layers.push(new ScatterplotLayer<KindnessPoint>({
+      id: 'kindness-pulse',
+      data: this.kindnessPoints,
+      getPosition: (d: KindnessPoint) => [d.lon, d.lat],
+      getRadius: 14000,
+      radiusScale: pulse,
+      radiusMinPixels: 6,
+      radiusMaxPixels: 18,
+      stroked: true,
+      filled: false,
+      getLineColor: [74, 222, 128, 80] as [number, number, number, number],
+      lineWidthMinPixels: 1,
+      pickable: false,
+      updateTriggers: { radiusScale: this.pulseTime },
+    }));
+
+    return layers;
+  }
+
+  private createHappinessChoroplethLayer(): GeoJsonLayer | null {
+    if (!this.countriesGeoJsonData || this.happinessScores.size === 0) return null;
+    const scores = this.happinessScores;
+    return new GeoJsonLayer({
+      id: 'happiness-choropleth-layer',
+      data: this.countriesGeoJsonData,
+      filled: true,
+      stroked: true,
+      getFillColor: (feature: { properties?: Record<string, unknown> }) => {
+        const code = feature.properties?.['ISO3166-1-Alpha-2'] as string | undefined;
+        const score = code ? scores.get(code) : undefined;
+        if (score == null) return [0, 0, 0, 0] as [number, number, number, number];
+        const t = score / 10;
+        return [
+          Math.round(40 + (1 - t) * 180),
+          Math.round(180 + t * 60),
+          Math.round(40 + (1 - t) * 100),
+          140,
+        ] as [number, number, number, number];
+      },
+      getLineColor: [100, 100, 100, 60] as [number, number, number, number],
+      getLineWidth: 1,
+      lineWidthMinPixels: 0.5,
+      pickable: true,
+      updateTriggers: { getFillColor: [scores.size] },
+    });
+  }
+
+  private createSpeciesRecoveryLayer(): ScatterplotLayer {
+    return new ScatterplotLayer({
+      id: 'species-recovery-layer',
+      data: this.speciesRecoveryZones,
+      getPosition: (d: (typeof this.speciesRecoveryZones)[number]) => [d.recoveryZone.lon, d.recoveryZone.lat],
+      getRadius: 50000,
+      radiusMinPixels: 8,
+      radiusMaxPixels: 25,
+      getFillColor: [74, 222, 128, 120] as [number, number, number, number],
+      stroked: true,
+      getLineColor: [74, 222, 128, 200] as [number, number, number, number],
+      lineWidthMinPixels: 1.5,
+      pickable: true,
+    });
+  }
+
+  private createRenewableInstallationsLayer(): ScatterplotLayer {
+    const typeColors: Record<string, [number, number, number, number]> = {
+      solar: [255, 200, 50, 200],
+      wind: [100, 200, 255, 200],
+      hydro: [0, 180, 180, 200],
+      geothermal: [255, 150, 80, 200],
+    };
+    const typeLineColors: Record<string, [number, number, number, number]> = {
+      solar: [255, 200, 50, 255],
+      wind: [100, 200, 255, 255],
+      hydro: [0, 180, 180, 255],
+      geothermal: [255, 150, 80, 255],
+    };
+    return new ScatterplotLayer({
+      id: 'renewable-installations-layer',
+      data: this.renewableInstallations,
+      getPosition: (d: RenewableInstallation) => [d.lon, d.lat],
+      getRadius: 30000,
+      radiusMinPixels: 5,
+      radiusMaxPixels: 18,
+      getFillColor: (d: RenewableInstallation) => typeColors[d.type] ?? [200, 200, 200, 200] as [number, number, number, number],
+      stroked: true,
+      getLineColor: (d: RenewableInstallation) => typeLineColors[d.type] ?? [200, 200, 200, 255] as [number, number, number, number],
+      lineWidthMinPixels: 1,
+      pickable: true,
+    });
   }
 
   private getTooltip(info: PickingInfo): { html: string } | null {
@@ -2451,6 +2678,27 @@ export class DeckGLMap {
         return { html: `<div class="deckgl-tooltip"><strong>${t('popups.cyberThreat.title')}</strong><br/>${text(obj.severity || t('components.deckgl.tooltip.medium'))} · ${text(obj.country || t('popups.unknown'))}</div>` };
       case 'news-locations-layer':
         return { html: `<div class="deckgl-tooltip"><strong>📰 ${t('components.deckgl.tooltip.news')}</strong><br/>${text(obj.title?.slice(0, 80) || '')}</div>` };
+      case 'positive-events-layer': {
+        const catLabel = obj.category ? obj.category.replace(/-/g, ' & ') : 'Positive Event';
+        const countInfo = obj.count > 1 ? `<br/><span style="opacity:.7">${obj.count} sources reporting</span>` : '';
+        return { html: `<div class="deckgl-tooltip"><strong>${text(obj.name)}</strong><br/><span style="text-transform:capitalize">${text(catLabel)}</span>${countInfo}</div>` };
+      }
+      case 'kindness-layer':
+        return { html: `<div class="deckgl-tooltip"><strong>${text(obj.name)}</strong></div>` };
+      case 'happiness-choropleth-layer': {
+        const hcName = obj.properties?.name ?? 'Unknown';
+        const hcCode = obj.properties?.['ISO3166-1-Alpha-2'];
+        const hcScore = hcCode ? this.happinessScores.get(hcCode as string) : undefined;
+        const hcScoreStr = hcScore != null ? hcScore.toFixed(1) : 'No data';
+        return { html: `<div class="deckgl-tooltip"><strong>${text(hcName)}</strong><br/>Happiness: ${hcScoreStr}/10${hcScore != null ? `<br/><span style="opacity:.7">${text(this.happinessSource)} (${this.happinessYear})</span>` : ''}</div>` };
+      }
+      case 'species-recovery-layer': {
+        return { html: `<div class="deckgl-tooltip"><strong>${text(obj.commonName)}</strong><br/>${text(obj.recoveryZone?.name ?? obj.region)}<br/><span style="opacity:.7">Status: ${text(obj.recoveryStatus)}</span></div>` };
+      }
+      case 'renewable-installations-layer': {
+        const riTypeLabel = obj.type ? String(obj.type).charAt(0).toUpperCase() + String(obj.type).slice(1) : 'Renewable';
+        return { html: `<div class="deckgl-tooltip"><strong>${text(obj.name)}</strong><br/>${riTypeLabel} &middot; ${obj.capacityMW?.toLocaleString() ?? '?'} MW<br/><span style="opacity:.7">${text(obj.country)} &middot; ${obj.year}</span></div>` };
+      }
       case 'gulf-investments-layer': {
         const inv = obj as GulfInvestment;
         const flag = inv.investingCountry === 'SA' ? '🇸🇦' : '🇦🇪';
@@ -2777,6 +3025,7 @@ export class DeckGLMap {
           { key: 'centralBanks', label: t('components.deckgl.layers.centralBanks'), icon: '&#127974;' },
           { key: 'commodityHubs', label: t('components.deckgl.layers.commodityHubs'), icon: '&#128230;' },
           { key: 'gulfInvestments', label: t('components.deckgl.layers.gulfInvestments'), icon: '&#127760;' },
+          { key: 'tradeRoutes', label: t('components.deckgl.layers.tradeRoutes'), icon: '&#128674;' },
           { key: 'cables', label: t('components.deckgl.layers.underseaCables'), icon: '&#128268;' },
           { key: 'pipelines', label: t('components.deckgl.layers.pipelines'), icon: '&#128738;' },
           { key: 'outages', label: t('components.deckgl.layers.internetOutages'), icon: '&#128225;' },
@@ -2785,6 +3034,14 @@ export class DeckGLMap {
           { key: 'waterways', label: t('components.deckgl.layers.strategicWaterways'), icon: '&#9875;' },
           { key: 'natural', label: t('components.deckgl.layers.naturalEvents'), icon: '&#127755;' },
           { key: 'cyberThreats', label: t('components.deckgl.layers.cyberThreats'), icon: '&#128737;' },
+        ]
+      : SITE_VARIANT === 'happy'
+      ? [
+          { key: 'positiveEvents', label: 'Positive Events', icon: '&#127775;' },
+          { key: 'kindness', label: 'Acts of Kindness', icon: '&#128154;' },
+          { key: 'happiness', label: 'World Happiness', icon: '&#128522;' },
+          { key: 'speciesRecovery', label: 'Species Recovery', icon: '&#128062;' },
+          { key: 'renewableInstallations', label: 'Clean Energy', icon: '&#9889;' },
         ]
       : [
         { key: 'hotspots', label: t('components.deckgl.layers.intelHotspots'), icon: '&#127919;' },
@@ -2798,6 +3055,7 @@ export class DeckGLMap {
         { key: 'datacenters', label: t('components.deckgl.layers.aiDataCenters'), icon: '&#128421;' },
         { key: 'military', label: t('components.deckgl.layers.militaryActivity'), icon: '&#9992;' },
         { key: 'ais', label: t('components.deckgl.layers.shipTraffic'), icon: '&#128674;' },
+        { key: 'tradeRoutes', label: t('components.deckgl.layers.tradeRoutes'), icon: '&#9875;' },
         { key: 'flights', label: t('components.deckgl.layers.flightDelays'), icon: '&#9992;' },
         { key: 'protests', label: t('components.deckgl.layers.protests'), icon: '&#128226;' },
         { key: 'ucdpEvents', label: t('components.deckgl.layers.ucdpEvents'), icon: '&#9876;' },
@@ -2904,16 +3162,17 @@ export class DeckGLMap {
           helpItem(label('cloudRegions'), 'techCloudRegions'),
           helpItem(label('techHQs'), 'techHQs'),
           helpItem(label('accelerators'), 'techAccelerators'),
+          helpItem(label('techEvents'), 'techEvents'),
         ])}
         ${helpSection('infrastructure', [
           helpItem(label('underseaCables'), 'infraCables'),
           helpItem(label('aiDataCenters'), 'infraDatacenters'),
           helpItem(label('internetOutages'), 'infraOutages'),
+          helpItem(label('cyberThreats'), 'techCyberThreats'),
         ])}
         ${helpSection('naturalEconomic', [
           helpItem(label('naturalEvents'), 'naturalEventsTech'),
-          helpItem(label('weatherAlerts'), 'weatherAlerts'),
-          helpItem(label('economicCenters'), 'economicCenters'),
+          helpItem(label('fires'), 'techFires'),
           helpItem(staticLabel('countries'), 'countriesOverlay'),
         ])}
       </div>
@@ -2927,12 +3186,14 @@ export class DeckGLMap {
           helpItem(label('financialCenters'), 'financeCenters'),
           helpItem(label('centralBanks'), 'financeCentralBanks'),
           helpItem(label('commodityHubs'), 'financeCommodityHubs'),
+          helpItem(label('gulfInvestments'), 'financeGulfInvestments'),
         ])}
         ${helpSection('infrastructureRisk', [
           helpItem(label('underseaCables'), 'financeCables'),
           helpItem(label('pipelines'), 'financePipelines'),
           helpItem(label('internetOutages'), 'financeOutages'),
           helpItem(label('cyberThreats'), 'financeCyberThreats'),
+          helpItem(label('tradeRoutes'), 'tradeRoutes'),
         ])}
         ${helpSection('macroContext', [
           helpItem(label('economicCenters'), 'economicCenters'),
@@ -2955,27 +3216,35 @@ export class DeckGLMap {
           helpItem(label('intelHotspots'), 'geoHotspots'),
           helpItem(staticLabel('sanctions'), 'geoSanctions'),
           helpItem(label('protests'), 'geoProtests'),
+          helpItem(label('ucdpEvents'), 'geoUcdpEvents'),
+          helpItem(label('displacementFlows'), 'geoDisplacement'),
         ])}
         ${helpSection('militaryStrategic', [
           helpItem(label('militaryBases'), 'militaryBases'),
           helpItem(label('nuclearSites'), 'militaryNuclear'),
           helpItem(label('gammaIrradiators'), 'militaryIrradiators'),
           helpItem(label('militaryActivity'), 'militaryActivity'),
+          helpItem(label('spaceports'), 'militarySpaceports'),
         ])}
         ${helpSection('infrastructure', [
           helpItem(label('underseaCables'), 'infraCablesFull'),
           helpItem(label('pipelines'), 'infraPipelinesFull'),
           helpItem(label('internetOutages'), 'infraOutages'),
           helpItem(label('aiDataCenters'), 'infraDatacentersFull'),
+          helpItem(label('cyberThreats'), 'infraCyberThreats'),
         ])}
         ${helpSection('transport', [
-          helpItem(staticLabel('shipping'), 'transportShipping'),
+          helpItem(label('shipTraffic'), 'transportShipping'),
+          helpItem(label('tradeRoutes'), 'tradeRoutes'),
           helpItem(label('flightDelays'), 'transportDelays'),
         ])}
         ${helpSection('naturalEconomic', [
           helpItem(label('naturalEvents'), 'naturalEventsFull'),
+          helpItem(label('fires'), 'firesFull'),
           helpItem(label('weatherAlerts'), 'weatherAlerts'),
+          helpItem(label('climateAnomalies'), 'climateAnomalies'),
           helpItem(label('economicCenters'), 'economicCenters'),
+          helpItem(label('criticalMinerals'), 'mineralsFull'),
         ])}
         ${helpSection('labels', [
           helpItem(staticLabel('countries'), 'countriesOverlay'),
@@ -3041,6 +3310,16 @@ export class DeckGLMap {
           { shape: shapes.hexagon('rgb(255, 210, 80)'), label: t('components.deckgl.legend.centralBank') },
           { shape: shapes.square('rgb(255, 150, 80)'), label: t('components.deckgl.legend.commodityHub') },
           { shape: shapes.triangle('rgb(80, 170, 255)'), label: t('components.deckgl.legend.waterway') },
+        ]
+      : SITE_VARIANT === 'happy'
+      ? [
+          { shape: shapes.circle('rgb(34, 197, 94)'), label: 'Positive Event' },
+          { shape: shapes.circle('rgb(234, 179, 8)'), label: 'Breakthrough' },
+          { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Act of Kindness' },
+          { shape: shapes.circle('rgb(255, 100, 50)'), label: 'Natural Event' },
+          { shape: shapes.square('rgb(34, 180, 100)'), label: 'Happy Country' },
+          { shape: shapes.circle('rgb(74, 222, 128)'), label: 'Species Recovery Zone' },
+          { shape: shapes.circle('rgb(255, 200, 50)'), label: 'Renewable Installation' },
         ]
       : [
           { shape: shapes.circle('rgb(255, 68, 68)'), label: t('components.deckgl.legend.highAlert') },
@@ -3248,6 +3527,52 @@ export class DeckGLMap {
     });
   }
 
+  private createTradeRoutesLayer(): ArcLayer<TradeRouteSegment> {
+    const active: [number, number, number, number] = getCurrentTheme() === 'light' ? [30, 100, 180, 200] : [100, 200, 255, 160];
+    const disrupted: [number, number, number, number] = getCurrentTheme() === 'light' ? [200, 40, 40, 220] : [255, 80, 80, 200];
+    const highRisk: [number, number, number, number] = getCurrentTheme() === 'light' ? [200, 140, 20, 200] : [255, 180, 50, 180];
+    const colorFor = (status: string): [number, number, number, number] =>
+      status === 'disrupted' ? disrupted : status === 'high_risk' ? highRisk : active;
+
+    return new ArcLayer<TradeRouteSegment>({
+      id: 'trade-routes-layer',
+      data: this.tradeRouteSegments,
+      getSourcePosition: (d) => d.sourcePosition,
+      getTargetPosition: (d) => d.targetPosition,
+      getSourceColor: (d) => colorFor(d.status),
+      getTargetColor: (d) => colorFor(d.status),
+      getWidth: (d) => d.category === 'energy' ? 3 : 2,
+      widthMinPixels: 1,
+      widthMaxPixels: 6,
+      greatCircle: true,
+      pickable: false,
+    });
+  }
+
+  private createTradeChokepointsLayer(): ScatterplotLayer {
+    const routeWaypointIds = new Set<string>();
+    for (const seg of this.tradeRouteSegments) {
+      const route = TRADE_ROUTES_LIST.find(r => r.id === seg.routeId);
+      if (route) for (const wp of route.waypoints) routeWaypointIds.add(wp);
+    }
+    const chokepoints = STRATEGIC_WATERWAYS.filter(w => routeWaypointIds.has(w.id));
+    const isLight = getCurrentTheme() === 'light';
+
+    return new ScatterplotLayer({
+      id: 'trade-chokepoints-layer',
+      data: chokepoints,
+      getPosition: (d: { lon: number; lat: number }) => [d.lon, d.lat],
+      getFillColor: isLight ? [200, 140, 20, 200] : [255, 180, 50, 180],
+      getLineColor: isLight ? [100, 70, 10, 255] : [255, 220, 120, 255],
+      getRadius: 30000,
+      stroked: true,
+      lineWidthMinPixels: 1,
+      radiusMinPixels: 4,
+      radiusMaxPixels: 12,
+      pickable: false,
+    });
+  }
+
   // Data setters - all use render() for debouncing
   public setEarthquakes(earthquakes: Earthquake[]): void {
     this.earthquakes = earthquakes;
@@ -3358,6 +3683,38 @@ export class DeckGLMap {
     this.render();
 
     this.syncPulseAnimation(now);
+  }
+
+  public setPositiveEvents(events: PositiveGeoEvent[]): void {
+    this.positiveEvents = events;
+    this.syncPulseAnimation();
+    this.render();
+  }
+
+  public setKindnessData(points: KindnessPoint[]): void {
+    this.kindnessPoints = points;
+    this.syncPulseAnimation();
+    this.render();
+  }
+
+  public setHappinessScores(data: HappinessData): void {
+    this.happinessScores = data.scores;
+    this.happinessYear = data.year;
+    this.happinessSource = data.source;
+    this.render();
+  }
+
+  public setSpeciesRecoveryZones(species: SpeciesRecovery[]): void {
+    this.speciesRecoveryZones = species.filter(
+      (s): s is SpeciesRecovery & { recoveryZone: { name: string; lat: number; lon: number } } =>
+        s.recoveryZone != null
+    );
+    this.render();
+  }
+
+  public setRenewableInstallations(installations: RenewableInstallation[]): void {
+    this.renewableInstallations = installations;
+    this.render();
   }
 
   public updateHotspotActivity(news: NewsItem[]): void {
@@ -3743,6 +4100,7 @@ export class DeckGLMap {
     getCountriesGeoJson()
       .then((geojson) => {
         if (!this.maplibreMap || !geojson) return;
+        this.countriesGeoJsonData = geojson;
         this.maplibreMap.addSource('country-boundaries', {
           type: 'geojson',
           data: geojson,
@@ -3834,7 +4192,7 @@ export class DeckGLMap {
   public highlightCountry(code: string): void {
     this.highlightedCountryCode = code;
     if (!this.maplibreMap || !this.countryGeoJsonLoaded) return;
-    const filter: maplibregl.FilterSpecification = ['==', ['get', 'ISO3166-1-Alpha-2'], code];
+    const filter = ['==', ['get', 'ISO3166-1-Alpha-2'], code] as maplibregl.FilterSpecification;
     try {
       this.maplibreMap.setFilter('country-highlight-fill', filter);
       this.maplibreMap.setFilter('country-highlight-border', filter);
@@ -3844,7 +4202,7 @@ export class DeckGLMap {
   public clearCountryHighlight(): void {
     this.highlightedCountryCode = null;
     if (!this.maplibreMap) return;
-    const noMatch: maplibregl.FilterSpecification = ['==', ['get', 'ISO3166-1-Alpha-2'], ''];
+    const noMatch = ['==', ['get', 'ISO3166-1-Alpha-2'], ''] as maplibregl.FilterSpecification;
     try {
       this.maplibreMap.setFilter('country-highlight-fill', noMatch);
       this.maplibreMap.setFilter('country-highlight-border', noMatch);
@@ -3858,6 +4216,10 @@ export class DeckGLMap {
     this.countryGeoJsonLoaded = false;
     this.maplibreMap.once('style.load', () => {
       this.loadCountryBoundaries();
+      this.updateCountryLayerPaint(theme);
+      // Re-render deck.gl overlay after style swap — interleaved layers need
+      // the new MapLibre style to be loaded before they can re-insert.
+      this.render();
     });
   }
 

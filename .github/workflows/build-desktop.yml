@@ -50,10 +50,15 @@ jobs:
             node_target: 'x86_64-pc-windows-msvc'
             label: 'Windows-x64'
             timeout: 120
-          - platform: 'ubuntu-22.04'
+          - platform: 'ubuntu-24.04'
             args: ''
             node_target: 'x86_64-unknown-linux-gnu'
             label: 'Linux-x64'
+            timeout: 120
+          - platform: 'ubuntu-24.04-arm'
+            args: '--target aarch64-unknown-linux-gnu'
+            node_target: 'aarch64-unknown-linux-gnu'
+            label: 'Linux-ARM64'
             timeout: 120
 
     runs-on: ${{ matrix.platform }}
@@ -77,7 +82,7 @@ jobs:
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
         with:
           toolchain: stable
-          targets: ${{ contains(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ contains(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || (matrix.label == 'Linux-ARM64' && 'aarch64-unknown-linux-gnu' || '') }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@ad397744b0d591a723ab90405b7247fac0e6b8db
@@ -89,7 +94,17 @@ jobs:
         if: contains(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly \
+            gstreamer1.0-libav \
+            gstreamer1.0-gl
 
       - name: Install frontend dependencies
         run: npm ci
@@ -286,6 +301,45 @@ jobs:
             exit 1
           fi
           echo "Verified signed app bundle and embedded Node runtime: $NODE_PATH"
+
+      - name: Smoke-test AppImage (Linux)
+        if: contains(matrix.platform, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get install -y xvfb imagemagick
+          APPIMAGE=$(find src-tauri/target -path '*/bundle/appimage/*.AppImage' | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "::error::No AppImage found after build"
+            exit 1
+          fi
+          chmod +x "$APPIMAGE"
+          # Start Xvfb with known display number
+          Xvfb :99 -screen 0 1440x900x24 &
+          export DISPLAY=:99
+          sleep 2
+          # Launch AppImage under virtual framebuffer
+          "$APPIMAGE" --no-sandbox &
+          APP_PID=$!
+          # Wait for app to render
+          sleep 15
+          # Screenshot the virtual display
+          import -window root screenshot.png || true
+          # Verify app is still running (didn't crash)
+          if kill -0 $APP_PID 2>/dev/null; then
+            echo "✅ AppImage launched successfully"
+            kill $APP_PID || true
+          else
+            echo "❌ AppImage crashed during startup"
+            exit 1
+          fi
+
+      - name: Upload smoke test screenshot
+        if: contains(matrix.platform, 'ubuntu')
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-smoke-test-screenshot-${{ matrix.label }}
+          path: screenshot.png
+          if-no-files-found: warn
 
       - name: Cleanup Apple signing materials
         if: always() && contains(matrix.platform, 'macos')
