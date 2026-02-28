@@ -5,13 +5,6 @@ export type Theme = 'dark' | 'light';
 const STORAGE_KEY = 'worldmonitor-theme';
 const DEFAULT_THEME: Theme = 'dark';
 
-function getMetaThemeColor(theme: Theme, variant?: string): string {
-  if (variant === 'happy') {
-    return theme === 'dark' ? '#1A2332' : '#FAFAF5';
-  }
-  return theme === 'dark' ? '#0a1a3f' : '#f3f6fc';
-}
-
 /**
  * Read the stored theme preference from localStorage.
  * Returns 'dark' or 'light' if valid, otherwise DEFAULT_THEME.
@@ -50,7 +43,7 @@ export function setTheme(theme: Theme): void {
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) {
     const variant = document.documentElement.dataset.variant;
-    meta.content = getMetaThemeColor(theme, variant);
+    meta.content = theme === 'dark' ? (variant === 'happy' ? '#1A2332' : '#0a0f0a') : (variant === 'happy' ? '#FAFAF5' : '#f8f9fa');
   }
   window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme } }));
 }
@@ -83,6 +76,10 @@ export function applyStoredTheme(): void {
   document.documentElement.dataset.theme = effective;
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) {
-    meta.content = getMetaThemeColor(effective, variant);
+    if (effective === 'dark') {
+      meta.content = variant === 'happy' ? '#1A2332' : '#0a0f0a';
+    } else {
+      meta.content = variant === 'happy' ? '#FAFAF5' : '#f8f9fa';
+    }
   }
 }

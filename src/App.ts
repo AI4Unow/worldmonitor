@@ -17,6 +17,7 @@ import { loadFromStorage, parseMapUrlState, saveToStorage, isMobileDevice } from
 import type { ParsedMapUrlState } from '@/utils';
 import { SignalModal, IntelligenceGapBadge } from '@/components';
 import { isDesktopRuntime } from '@/services/runtime';
+import { BETA_MODE } from '@/config/beta';
 import { trackEvent, trackDeeplinkOpened } from '@/services/analytics';
 import { preloadCountryGeometry, getCountryNameByCode } from '@/services/country-geometry';
 import { initI18n } from '@/services/i18n';
@@ -262,6 +263,7 @@ export class App {
       openCountryStory: (code, name) => this.countryIntel.openCountryStory(code, name),
       loadAllData: () => this.dataLoader.loadAllData(),
       updateMonitorResults: () => this.dataLoader.updateMonitorResults(),
+      loadSecurityAdvisories: () => this.dataLoader.loadSecurityAdvisories(),
     });
 
     this.eventHandlers = new EventHandlerManager(this.state, {
@@ -296,6 +298,7 @@ export class App {
     const aiFlow = getAiFlowSettings();
     if (aiFlow.browserModel || isDesktopRuntime()) {
       await mlWorker.init();
+      if (BETA_MODE) mlWorker.loadModel('summarization-beta').catch(() => {});
     }
 
     this.unsubAiFlow = subscribeAiFlowChange((key) => {

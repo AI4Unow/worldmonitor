@@ -4,7 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // English is always needed as fallback — bundle it eagerly.
 import enTranslation from '../locales/en.json';
 
-const SUPPORTED_LANGUAGES = ['en', 'fr', 'de', 'el', 'es', 'it', 'pl', 'pt', 'nl', 'sv', 'ru', 'ar', 'zh', 'ja', 'tr', 'th', 'vi'] as const;
+const SUPPORTED_LANGUAGES = ['en', 'fr', 'de', 'el', 'es', 'it', 'pl', 'pt', 'nl', 'sv', 'ru', 'ar', 'zh', 'ja', 'ko', 'tr', 'th', 'vi'] as const;
 type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 type TranslationDictionary = Record<string, unknown>;
 
@@ -18,32 +18,13 @@ const localeModules = import.meta.glob<TranslationDictionary>(
 );
 
 const RTL_LANGUAGES = new Set(['ar']);
-const DEFAULT_LANGUAGE: SupportedLanguage = 'vi';
-const LANGUAGE_STORAGE_KEY = 'i18nextLng';
 
 function normalizeLanguage(lng: string): SupportedLanguage {
-  const base = (lng || DEFAULT_LANGUAGE).split('-')[0]?.toLowerCase() || DEFAULT_LANGUAGE;
+  const base = (lng || 'en').split('-')[0]?.toLowerCase() || 'en';
   if (SUPPORTED_LANGUAGE_SET.has(base as SupportedLanguage)) {
     return base as SupportedLanguage;
   }
-  return DEFAULT_LANGUAGE;
-}
-
-function getInitialLanguage(): SupportedLanguage {
-  if (typeof window === 'undefined') {
-    return DEFAULT_LANGUAGE;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored) {
-      return normalizeLanguage(stored);
-    }
-  } catch {
-    // Ignore storage access failures and use the default language.
-  }
-
-  return DEFAULT_LANGUAGE;
+  return 'en';
 }
 
 function applyDocumentDirection(lang: string): void {
@@ -82,10 +63,8 @@ async function ensureLanguageLoaded(lng: string): Promise<SupportedLanguage> {
 
 // Initialize i18n
 export async function initI18n(): Promise<void> {
-  const initialLanguage = getInitialLanguage();
-
   if (i18next.isInitialized) {
-    const currentLanguage = normalizeLanguage(i18next.language || initialLanguage);
+    const currentLanguage = normalizeLanguage(i18next.language || 'en');
     await ensureLanguageLoaded(currentLanguage);
     applyDocumentDirection(i18next.language || currentLanguage);
     return;
@@ -99,7 +78,6 @@ export async function initI18n(): Promise<void> {
       resources: {
         en: { translation: enTranslation as TranslationDictionary },
       },
-      lng: initialLanguage,
       supportedLngs: [...SUPPORTED_LANGUAGES],
       nonExplicitSupportedLngs: true,
       fallbackLng: 'en',
@@ -108,14 +86,13 @@ export async function initI18n(): Promise<void> {
         escapeValue: false, // not needed for these simple strings
       },
       detection: {
-        order: ['localStorage'],
-        lookupLocalStorage: LANGUAGE_STORAGE_KEY,
+        order: ['localStorage', 'navigator'],
         caches: ['localStorage'],
       },
     });
 
-  const detectedLanguage = await ensureLanguageLoaded(i18next.language || initialLanguage);
-  if (detectedLanguage !== initialLanguage) {
+  const detectedLanguage = await ensureLanguageLoaded(i18next.language || 'en');
+  if (detectedLanguage !== 'en') {
     // Re-trigger translation resolution now that the detected bundle is loaded.
     await i18next.changeLanguage(detectedLanguage);
   }
@@ -138,7 +115,7 @@ export async function changeLanguage(lng: string): Promise<void> {
 
 // Helper to get current language (normalized to short code)
 export function getCurrentLanguage(): string {
-  const lang = i18next.language || DEFAULT_LANGUAGE;
+  const lang = i18next.language || 'en';
   return lang.split('-')[0]!;
 }
 
@@ -148,7 +125,7 @@ export function isRTL(): boolean {
 
 export function getLocale(): string {
   const lang = getCurrentLanguage();
-  const map: Record<string, string> = { en: 'en-US', el: 'el-GR', zh: 'zh-CN', pt: 'pt-BR', ja: 'ja-JP', tr: 'tr-TR', th: 'th-TH', vi: 'vi-VN' };
+  const map: Record<string, string> = { en: 'en-US', el: 'el-GR', zh: 'zh-CN', pt: 'pt-BR', ja: 'ja-JP', ko: 'ko-KR', tr: 'tr-TR', th: 'th-TH', vi: 'vi-VN' };
   return map[lang] || lang;
 }
 
@@ -167,6 +144,7 @@ export const LANGUAGES = [
   { code: 'sv', label: 'Svenska', flag: '🇸🇪' },
   { code: 'ru', label: 'Русский', flag: '🇷🇺' },
   { code: 'ja', label: '日本語', flag: '🇯🇵' },
+  { code: 'ko', label: '한국어', flag: '🇰🇷' },
   { code: 'th', label: 'ไทย', flag: '🇹🇭' },
   { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
