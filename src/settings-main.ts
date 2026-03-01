@@ -1,4 +1,5 @@
 import './styles/main.css';
+import './styles/ai4u-theme-overrides.css';
 import './styles/settings-window.css';
 import { SettingsManager } from '@/services/settings-manager';
 import {

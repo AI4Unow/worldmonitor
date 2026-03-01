@@ -1,4 +1,5 @@
 import '../styles/main.css';
+import '../styles/ai4u-theme-overrides.css';
 import { MapPopup } from '../components/MapPopup';
 import type { Hotspot } from '../types';
 

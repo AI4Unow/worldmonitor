@@ -1,4 +1,5 @@
 import '../styles/main.css';
+import '../styles/ai4u-theme-overrides.css';
 import { MapComponent } from '../components/Map';
 import { initI18n } from '../services/i18n';
 

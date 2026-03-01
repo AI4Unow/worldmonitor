@@ -1,5 +1,6 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../styles/main.css';
+import '../styles/ai4u-theme-overrides.css';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { DeckGLMap } from '../components/DeckGLMap';
 import {
