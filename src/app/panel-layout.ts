@@ -34,6 +34,10 @@ import {
   TradePolicyPanel,
   SupplyChainPanel,
   SecurityAdvisoriesPanel,
+  OrefSirensPanel,
+  TelegramIntelPanel,
+  GulfEconomiesPanel,
+  WorldClockPanel,
 } from '@/components';
 import { SatelliteFiresPanel } from '@/components/SatelliteFiresPanel';
 import { PositiveNewsFeedPanel } from '@/components/PositiveNewsFeedPanel';
@@ -176,6 +180,7 @@ export class PanelLayoutManager implements AppModule {
           </div>
         </div>
         <div class="header-right">
+          <!-- TODO: Add "Download App" link here for non-desktop users (this.ctx.isDesktopApp === false) -->
           <button class="search-btn" id="searchBtn"><kbd>⌘K</kbd> ${t('header.search')}</button>
           ${this.ctx.isDesktopApp ? '' : `<button class="copy-link-btn" id="copyLinkBtn">${t('header.copyLink')}</button>`}
           <button class="theme-toggle-btn" id="headerThemeToggle" title="${t('header.toggleTheme')}">
@@ -195,11 +200,16 @@ export class PanelLayoutManager implements AppModule {
               <span class="panel-title">${SITE_VARIANT === 'tech' ? t('panels.techMap') : SITE_VARIANT === 'happy' ? 'Good News Map' : t('panels.map')}</span>
             </div>
             <span class="header-clock" id="headerClock"></span>
-            <button class="map-pin-btn" id="mapPinBtn" title="${t('header.pinMap')}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 17v5M9 10.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V16a1 1 0 001 1h12a1 1 0 001-1v-.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V7a1 1 0 011-1 1 1 0 001-1V4a1 1 0 00-1-1H8a1 1 0 00-1 1v1a1 1 0 001 1 1 1 0 011 1v3.76z"/>
-              </svg>
-            </button>
+            <div style="display:flex;align-items:center;gap:2px">
+              <button class="map-pin-btn" id="mapFullscreenBtn" title="Fullscreen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              </button>
+              <button class="map-pin-btn" id="mapPinBtn" title="${t('header.pinMap')}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 17v5M9 10.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24V16a1 1 0 001 1h12a1 1 0 001-1v-.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V7a1 1 0 011-1 1 1 0 001-1V4a1 1 0 00-1-1H8a1 1 0 00-1 1v1a1 1 0 001 1 1 1 0 011 1v3.76z"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="map-container" id="mapContainer"></div>
           ${SITE_VARIANT === 'happy' ? '<button class="tv-exit-btn" id="tvExitBtn">Exit TV Mode</button>' : ''}
@@ -210,6 +220,36 @@ export class PanelLayoutManager implements AppModule {
     `;
 
     this.createPanels();
+
+    if (this.ctx.isMobile) {
+      this.setupMobileMapToggle();
+    }
+  }
+
+  private setupMobileMapToggle(): void {
+    const mapSection = document.getElementById('mapSection');
+    const headerLeft = mapSection?.querySelector('.panel-header-left');
+    if (!mapSection || !headerLeft) return;
+
+    const stored = localStorage.getItem('mobile-map-collapsed');
+    const collapsed = stored === null || stored === 'true';
+    if (collapsed) mapSection.classList.add('collapsed');
+
+    const updateBtn = (btn: HTMLButtonElement, isCollapsed: boolean) => {
+      btn.textContent = isCollapsed ? `▶ ${t('components.map.showMap')}` : `▼ ${t('components.map.hideMap')}`;
+    };
+
+    const btn = document.createElement('button');
+    btn.className = 'map-collapse-btn';
+    updateBtn(btn, collapsed);
+    headerLeft.after(btn);
+
+    btn.addEventListener('click', () => {
+      const isCollapsed = mapSection.classList.toggle('collapsed');
+      updateBtn(btn, isCollapsed);
+      localStorage.setItem('mobile-map-collapsed', String(isCollapsed));
+      if (!isCollapsed) window.dispatchEvent(new Event('resize'));
+    });
   }
 
   renderCriticalBanner(postures: TheaterPostureSummary[]): void {
@@ -302,7 +342,7 @@ export class PanelLayoutManager implements AppModule {
     this.ctx.map = new MapContainer(mapContainer, {
       zoom: this.ctx.isMobile ? 2.5 : 1.0,
       pan: { x: 0, y: 0 },
-      view: this.ctx.isMobile ? 'mena' : 'global',
+      view: this.ctx.isMobile ? this.ctx.resolvedLocation : 'global',
       layers: this.ctx.mapLayers,
       timeRange: '7d',
     });
@@ -496,6 +536,13 @@ export class PanelLayoutManager implements AppModule {
       const gdeltIntelPanel = new GdeltIntelPanel();
       this.ctx.panels['gdelt-intel'] = gdeltIntelPanel;
 
+      if (this.ctx.isDesktopApp) {
+        import('@/components/DeductionPanel').then(({ DeductionPanel }) => {
+          const deductionPanel = new DeductionPanel(() => this.ctx.allNews);
+          this.ctx.panels['deduction'] = deductionPanel;
+        });
+      }
+
       const ciiPanel = new CIIPanel();
       ciiPanel.setShareStoryHandler((code, name) => {
         this.callbacks.openCountryStory(code, name);
@@ -514,7 +561,7 @@ export class PanelLayoutManager implements AppModule {
       });
       this.ctx.panels['strategic-risk'] = strategicRiskPanel;
 
-      const strategicPosturePanel = new StrategicPosturePanel();
+      const strategicPosturePanel = new StrategicPosturePanel(() => this.ctx.allNews);
       strategicPosturePanel.setLocationClickHandler((lat, lon) => {
         console.log('[App] StrategicPosture handler called:', { lat, lon, hasMap: !!this.ctx.map });
         this.ctx.map?.setCenter(lat, lon, 4);
@@ -547,6 +594,12 @@ export class PanelLayoutManager implements AppModule {
         void this.callbacks.loadSecurityAdvisories?.();
       });
       this.ctx.panels['security-advisories'] = securityAdvisoriesPanel;
+
+      const orefSirensPanel = new OrefSirensPanel();
+      this.ctx.panels['oref-sirens'] = orefSirensPanel;
+
+      const telegramIntelPanel = new TelegramIntelPanel();
+      this.ctx.panels['telegram-intel'] = telegramIntelPanel;
     }
 
     if (SITE_VARIANT === 'finance') {
@@ -554,16 +607,26 @@ export class PanelLayoutManager implements AppModule {
         focusInvestmentOnMap(this.ctx.map, this.ctx.mapLayers, inv.lat, inv.lon);
       });
       this.ctx.panels['gcc-investments'] = investmentsPanel;
+
+      const gulfEconomiesPanel = new GulfEconomiesPanel();
+      this.ctx.panels['gulf-economies'] = gulfEconomiesPanel;
     }
 
+    this.ctx.panels['world-clock'] = new WorldClockPanel();
+
     if (SITE_VARIANT !== 'happy') {
+      if (!this.ctx.panels['gulf-economies']) {
+        const gulfEconomiesPanel = new GulfEconomiesPanel();
+        this.ctx.panels['gulf-economies'] = gulfEconomiesPanel;
+      }
+
       const liveNewsPanel = new LiveNewsPanel();
       this.ctx.panels['live-news'] = liveNewsPanel;
 
       const liveWebcamsPanel = new LiveWebcamsPanel();
       this.ctx.panels['live-webcams'] = liveWebcamsPanel;
 
-      this.ctx.panels['events'] = new TechEventsPanel('events');
+      this.ctx.panels['events'] = new TechEventsPanel('events', () => this.ctx.allNews);
 
       const serviceStatusPanel = new ServiceStatusPanel();
       this.ctx.panels['service-status'] = serviceStatusPanel;
@@ -734,13 +797,11 @@ export class PanelLayoutManager implements AppModule {
       this.ctx.map.setLayers(layers);
     }
 
-    if (!view) {
-      if (zoom !== undefined) {
-        this.ctx.map.setZoom(zoom);
-      }
-      if (lat !== undefined && lon !== undefined && zoom !== undefined && zoom > 2) {
-        this.ctx.map.setCenter(lat, lon);
-      }
+    if (lat !== undefined && lon !== undefined) {
+      const effectiveZoom = zoom ?? this.ctx.map.getState().zoom;
+      if (effectiveZoom > 2) this.ctx.map.setCenter(lat, lon, zoom);
+    } else if (!view && zoom !== undefined) {
+      this.ctx.map.setZoom(zoom);
     }
 
     const regionSelect = document.getElementById('regionSelect') as HTMLSelectElement;
@@ -826,7 +887,12 @@ export class PanelLayoutManager implements AppModule {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
       if (el.dataset.resizing === 'true') return;
-      if (target.classList?.contains('panel-resize-handle') || target.closest?.('.panel-resize-handle')) return;
+      if (
+        target.classList?.contains('panel-resize-handle') ||
+        target.closest?.('.panel-resize-handle') ||
+        target.classList?.contains('panel-col-resize-handle') ||
+        target.closest?.('.panel-col-resize-handle')
+      ) return;
       if (target.closest('button, a, input, select, textarea, .panel-content')) return;
 
       isDragging = true;

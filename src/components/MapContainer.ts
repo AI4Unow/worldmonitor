@@ -36,6 +36,7 @@ import type { KindnessPoint } from '@/services/kindness-data';
 import type { HappinessData } from '@/services/happiness-data';
 import type { SpeciesRecovery } from '@/services/conservation-data';
 import type { RenewableInstallation } from '@/services/renewable-installations';
+import type { GpsJamHex } from '@/services/gps-interference';
 
 export type TimeRange = '1h' | '6h' | '24h' | '48h' | '7d' | 'all';
 export type MapView = 'global' | 'america' | 'mena' | 'eu' | 'asia' | 'latam' | 'africa' | 'oceania';
@@ -79,7 +80,7 @@ export class MapContainer {
     this.isMobile = isMobileDevice();
 
     // Use deck.gl on desktop with WebGL support, SVG on mobile
-    this.useDeckGL = !this.isMobile && this.hasWebGLSupport();
+    this.useDeckGL = this.shouldUseDeckGL();
 
     this.init();
   }
@@ -95,6 +96,14 @@ export class MapContainer {
     } catch {
       return false;
     }
+  }
+
+  private shouldUseDeckGL(): boolean {
+    if (!this.hasWebGLSupport()) return false;
+    if (!this.isMobile) return true;
+    const mem = (navigator as any).deviceMemory;
+    if (mem !== undefined && mem < 3) return false;
+    return true;
   }
 
   private initSvgMap(logMessage: string): void {
@@ -322,11 +331,25 @@ export class MapContainer {
     }
   }
 
+  public setGpsJamming(hexes: GpsJamHex[]): void {
+    if (this.useDeckGL) {
+      this.deckGLMap?.setGpsJamming(hexes);
+    }
+  }
+
   public setCyberThreats(threats: CyberThreat[]): void {
     if (this.useDeckGL) {
       this.deckGLMap?.setCyberThreats(threats);
     } else {
       this.svgMap?.setCyberThreats(threats);
+    }
+  }
+
+  public setIranEvents(events: import('@/services/conflict').IranEvent[]): void {
+    if (this.useDeckGL) {
+      this.deckGLMap?.setIranEvents(events);
+    } else {
+      this.svgMap?.setIranEvents(events);
     }
   }
 
@@ -575,10 +598,19 @@ export class MapContainer {
     }
   }
 
-  // Country click + highlight (deck.gl only)
   public onCountryClicked(callback: (country: CountryClickPayload) => void): void {
     if (this.useDeckGL) {
       this.deckGLMap?.setOnCountryClick(callback);
+    } else {
+      this.svgMap?.setOnCountryClick(callback);
+    }
+  }
+
+  public fitCountry(code: string): void {
+    if (this.useDeckGL) {
+      this.deckGLMap?.fitCountry(code);
+    } else {
+      this.svgMap?.fitCountry(code);
     }
   }
 

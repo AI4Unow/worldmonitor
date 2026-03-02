@@ -18,7 +18,7 @@ import { getVesselSnapshot } from '../../maritime/v1/get-vessel-snapshot';
 import { computeDisruptionScore, scoreToStatus, SEVERITY_SCORE } from './_scoring.mjs';
 
 const REDIS_CACHE_KEY = 'supply_chain:chokepoints:v1';
-const REDIS_CACHE_TTL = 300;
+const REDIS_CACHE_TTL = 900; // 15 min
 
 interface ChokepointConfig {
   id: string;
@@ -54,8 +54,8 @@ async function fetchChokepointData(): Promise<ChokepointFetchResult> {
   let vesselFailed = false;
 
   const [navResult, vesselResult] = await Promise.all([
-    listNavigationalWarnings(ctx, { area: '' }).catch((): ListNavigationalWarningsResponse => { navFailed = true; return { warnings: [], pagination: undefined }; }),
-    getVesselSnapshot(ctx, {}).catch((): GetVesselSnapshotResponse => { vesselFailed = true; return { snapshot: undefined }; }),
+    listNavigationalWarnings(ctx, { area: '', pageSize: 0, cursor: '' }).catch((): ListNavigationalWarningsResponse => { navFailed = true; return { warnings: [], pagination: undefined }; }),
+    getVesselSnapshot(ctx, { neLat: 90, neLon: 180, swLat: -90, swLon: -180 }).catch((): GetVesselSnapshotResponse => { vesselFailed = true; return { snapshot: undefined }; }),
   ]);
 
   const warnings = navResult.warnings || [];
@@ -114,6 +114,7 @@ export async function getChokepointStatus(
       REDIS_CACHE_TTL,
       async () => {
         const { chokepoints, upstreamUnavailable } = await fetchChokepointData();
+        if (upstreamUnavailable) return null;
         return { chokepoints, fetchedAt: new Date().toISOString(), upstreamUnavailable };
       },
     );

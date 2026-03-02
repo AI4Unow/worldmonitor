@@ -15,10 +15,10 @@ import { YAHOO_ONLY_SYMBOLS, fetchFinnhubQuote, fetchYahooQuotesBatch } from './
 import { cachedFetchJson } from '../../../_shared/redis';
 
 const REDIS_CACHE_KEY = 'market:quotes:v1';
-const REDIS_CACHE_TTL = 120; // 2 min — shared across all Vercel instances
+const REDIS_CACHE_TTL = 480; // 8 min — shared across all Vercel instances
 
 const quotesCache = new Map<string, { data: ListMarketQuotesResponse; timestamp: number }>();
-const QUOTES_CACHE_TTL = 120_000; // 2 minutes (in-memory fallback)
+const QUOTES_CACHE_TTL = 480_000; // 8 minutes (in-memory fallback)
 
 function cacheKey(symbols: string[]): string {
   return [...symbols].sort().join(',');
@@ -47,7 +47,7 @@ export async function listMarketQuotes(
   const result = await cachedFetchJson<ListMarketQuotesResponse>(redisKey, REDIS_CACHE_TTL, async () => {
     const apiKey = process.env.FINNHUB_API_KEY;
     const symbols = req.symbols;
-    if (!symbols.length) return { quotes: [], finnhubSkipped: !apiKey, skipReason: !apiKey ? 'FINNHUB_API_KEY not configured' : '' };
+    if (!symbols.length) return { quotes: [], finnhubSkipped: !apiKey, skipReason: !apiKey ? 'FINNHUB_API_KEY not configured' : '', rateLimited: false };
 
     const finnhubSymbols = symbols.filter((s) => !YAHOO_ONLY_SYMBOLS.has(s));
     const yahooSymbols = symbols.filter((s) => YAHOO_ONLY_SYMBOLS.has(s));
@@ -100,9 +100,9 @@ export async function listMarketQuotes(
       }
     }
 
-    // Stale-while-revalidate: if Yahoo rate-limited and no fresh data, serve cached
+    // If Yahoo rate-limited and no fresh data, return null — outer handler serves stale
     if (quotes.length === 0 && memCached) {
-      return memCached.data;
+      return null;
     }
 
     if (quotes.length === 0) {
@@ -114,15 +114,15 @@ export async function listMarketQuotes(
     // Only report skipped if Finnhub key missing AND Yahoo fallback didn't cover the gap
     const coveredByYahoo = finnhubSymbols.every((s) => quotes.some((q) => q.symbol === s));
     const skipped = !apiKey && !coveredByYahoo;
-    return { quotes, finnhubSkipped: skipped, skipReason: skipped ? 'FINNHUB_API_KEY not configured' : '' };
+    return { quotes, finnhubSkipped: skipped, skipReason: skipped ? 'FINNHUB_API_KEY not configured' : '', rateLimited: false };
   });
 
   if (result?.quotes?.length) {
     quotesCache.set(key, { data: result, timestamp: now });
   }
 
-  return result || memCached?.data || { quotes: [], finnhubSkipped: false, skipReason: '' };
+  return result || memCached?.data || { quotes: [], finnhubSkipped: false, skipReason: '', rateLimited: false };
   } catch {
-    return memCached?.data || { quotes: [], finnhubSkipped: false, skipReason: '' };
+    return memCached?.data || { quotes: [], finnhubSkipped: false, skipReason: '', rateLimited: false };
   }
 }

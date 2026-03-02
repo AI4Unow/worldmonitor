@@ -1,4 +1,7 @@
 import type { NewsItem, Monitor, PanelConfig, MapLayers, InternetOutage, SocialUnrestEvent, MilitaryFlight, MilitaryFlightCluster, MilitaryVessel, MilitaryVesselCluster, CyberThreat, USNIFleetReport } from '@/types';
+import type { AirportDelayAlert } from '@/services/aviation';
+import type { IranEvent } from '@/generated/client/worldmonitor/conflict/v1/service_client';
+import type { SecurityAdvisory } from '@/services/security-advisories';
 import type { MapContainer, Panel, NewsPanel, SignalModal, StatusPanel, SearchModal } from '@/components';
 import type { IntelligenceGapBadge } from '@/components';
 import type { MarketData, ClusteredEvent } from '@/types';
@@ -21,25 +24,42 @@ import type { GoodThingsDigestPanel } from '@/components/GoodThingsDigestPanel';
 import type { SpeciesComebackPanel } from '@/components/SpeciesComebackPanel';
 import type { RenewableEnergyPanel } from '@/components/RenewableEnergyPanel';
 import type { TvModeController } from '@/services/tv-mode';
+import type { BreakingNewsBanner } from '@/components/BreakingNewsBanner';
 
 export interface CountryBriefSignals {
+  criticalNews: number;
   protests: number;
   militaryFlights: number;
   militaryVessels: number;
   outages: number;
+  aisDisruptions: number;
+  satelliteFires: number;
+  temporalAnomalies: number;
+  cyberThreats: number;
   earthquakes: number;
   displacementOutflow: number;
   climateStress: number;
   conflictEvents: number;
+  activeStrikes: number;
+  orefSirens: number;
+  orefHistory24h: number;
+  aviationDisruptions: number;
+  travelAdvisories: number;
+  travelAdvisoryMaxLevel: string | null;
+  gpsJammingHexes: number;
   isTier1: boolean;
 }
 
 export interface IntelligenceCache {
+  flightDelays?: AirportDelayAlert[];
   outages?: InternetOutage[];
   protests?: { events: SocialUnrestEvent[]; sources: { acled: number; gdelt: number } };
   military?: { flights: MilitaryFlight[]; flightClusters: MilitaryFlightCluster[]; vessels: MilitaryVessel[]; vesselClusters: MilitaryVesselCluster[] };
   earthquakes?: Earthquake[];
   usniFleet?: USNIFleetReport;
+  iranEvents?: IranEvent[];
+  orefAlerts?: { alertCount: number; historyCount24h: number };
+  advisories?: SecurityAdvisory[];
 }
 
 export interface AppModule {
@@ -78,6 +98,7 @@ export interface AppContext {
   statusPanel: StatusPanel | null;
   searchModal: SearchModal | null;
   findingsBadge: IntelligenceGapBadge | null;
+  breakingBanner: BreakingNewsBanner | null;
   playbackControl: PlaybackControl | null;
   exportPanel: ExportPanel | null;
   unifiedSettings: UnifiedSettings | null;
@@ -101,6 +122,7 @@ export interface AppContext {
   isPlaybackMode: boolean;
   isIdle: boolean;
   initialLoadComplete: boolean;
+  resolvedLocation: 'global' | 'america' | 'mena' | 'eu' | 'asia' | 'latam' | 'africa' | 'oceania';
 
   initialUrlState: ParsedMapUrlState | null;
   readonly PANEL_ORDER_KEY: string;

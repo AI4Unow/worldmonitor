@@ -20,11 +20,11 @@ const localeModules = import.meta.glob<TranslationDictionary>(
 const RTL_LANGUAGES = new Set(['ar']);
 
 function normalizeLanguage(lng: string): SupportedLanguage {
-  const base = (lng || 'en').split('-')[0]?.toLowerCase() || 'en';
+  const base = (lng || 'vi').split('-')[0]?.toLowerCase() || 'vi';
   if (SUPPORTED_LANGUAGE_SET.has(base as SupportedLanguage)) {
     return base as SupportedLanguage;
   }
-  return 'en';
+  return 'vi';
 }
 
 function applyDocumentDirection(lang: string): void {
@@ -64,7 +64,7 @@ async function ensureLanguageLoaded(lng: string): Promise<SupportedLanguage> {
 // Initialize i18n
 export async function initI18n(): Promise<void> {
   if (i18next.isInitialized) {
-    const currentLanguage = normalizeLanguage(i18next.language || 'en');
+    const currentLanguage = normalizeLanguage(i18next.language || 'vi');
     await ensureLanguageLoaded(currentLanguage);
     applyDocumentDirection(i18next.language || currentLanguage);
     return;
@@ -80,7 +80,7 @@ export async function initI18n(): Promise<void> {
       },
       supportedLngs: [...SUPPORTED_LANGUAGES],
       nonExplicitSupportedLngs: true,
-      fallbackLng: 'en',
+      fallbackLng: 'vi',
       debug: import.meta.env.DEV,
       interpolation: {
         escapeValue: false, // not needed for these simple strings
@@ -91,7 +91,7 @@ export async function initI18n(): Promise<void> {
       },
     });
 
-  const detectedLanguage = await ensureLanguageLoaded(i18next.language || 'en');
+  const detectedLanguage = await ensureLanguageLoaded(i18next.language || 'vi');
   if (detectedLanguage !== 'en') {
     // Re-trigger translation resolution now that the detected bundle is loaded.
     await i18next.changeLanguage(detectedLanguage);
@@ -115,7 +115,7 @@ export async function changeLanguage(lng: string): Promise<void> {
 
 // Helper to get current language (normalized to short code)
 export function getCurrentLanguage(): string {
-  const lang = i18next.language || 'en';
+  const lang = i18next.language || 'vi';
   return lang.split('-')[0]!;
 }
 

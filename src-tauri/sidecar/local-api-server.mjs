@@ -105,6 +105,7 @@ const ALLOWED_ENV_KEYS = new Set([
   'VITE_OPENSKY_RELAY_URL', 'OPENSKY_CLIENT_ID', 'OPENSKY_CLIENT_SECRET',
   'AISSTREAM_API_KEY', 'VITE_WS_RELAY_URL', 'FINNHUB_API_KEY', 'NASA_FIRMS_API_KEY',
   'OLLAMA_API_URL', 'OLLAMA_MODEL', 'WORLDMONITOR_API_KEY', 'WTO_API_KEY',
+  'AVIATIONSTACK_API', 'ICAO_API_KEY',
 ]);
 
 const CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -900,6 +901,23 @@ async function validateSecretAgainstProvider(key, rawValue, context = {}) {
     case 'WTO_API_KEY':
       return ok('WTO API key stored (live verification not available in sidecar)');
 
+    case 'AVIATIONSTACK_API': {
+      const response = await fetchWithTimeout(
+        `https://api.aviationstack.com/v1/flights?access_key=${encodeURIComponent(value)}&limit=1`,
+        { headers: { Accept: 'application/json', 'User-Agent': CHROME_UA } }
+      );
+      const text = await response.text();
+      if (isCloudflareChallenge403(response, text)) return ok('AviationStack key stored (Cloudflare blocked verification)');
+      let payload = null;
+      try { payload = JSON.parse(text); } catch { /* ignore */ }
+      if (payload?.error?.code === 101 || payload?.error?.code === 105) return fail('AviationStack rejected this key');
+      if (!response.ok && response.status !== 200) return fail(`AviationStack probe failed (${response.status})`);
+      return ok('AviationStack key verified');
+    }
+
+    case 'ICAO_API_KEY':
+      return ok('ICAO API key stored (verification requires NOTAM endpoint access)');
+
       default:
         return ok('Key stored');
     }
@@ -920,6 +938,64 @@ async function dispatch(requestUrl, req, routes, context) {
   // Health check — exempt from auth to support external monitoring tools
   if (requestUrl.pathname === '/api/service-status') {
     return handleLocalServiceStatus(context);
+  }
+
+  // HLS proxy — exempt from auth because <video src="..."> cannot carry
+  // custom headers.  Proxies HLS manifests and segments from allowlisted CDN
+  // hosts, adding the required Referer header that browsers cannot set.
+  // Desktop-only (sidecar); web uses YouTube fallback.
+  if (requestUrl.pathname === '/api/hls-proxy') {
+    const ALLOWED_HLS_HOSTS = new Set(['cdn-ca2-na.lncnetworks.host']);
+    const upstreamRaw = requestUrl.searchParams.get('url');
+    if (!upstreamRaw) return new Response('Missing url param', { status: 400, headers: { 'content-type': 'text/plain', ...makeCorsHeaders(req) } });
+    let upstream;
+    try { upstream = new URL(upstreamRaw); } catch { return new Response('Invalid url', { status: 400, headers: { 'content-type': 'text/plain', ...makeCorsHeaders(req) } }); }
+    if (upstream.protocol !== 'https:' || !ALLOWED_HLS_HOSTS.has(upstream.hostname)) {
+      return new Response('Host not allowed', { status: 403, headers: { 'content-type': 'text/plain', ...makeCorsHeaders(req) } });
+    }
+    try {
+      const hlsResp = await new Promise((resolve, reject) => {
+        const reqOpts = {
+          hostname: upstream.hostname,
+          port: 443,
+          path: upstream.pathname + upstream.search,
+          method: 'GET',
+          headers: { 'Referer': 'https://livenewschat.eu/', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' },
+          family: 4,
+        };
+        const r = https.request(reqOpts, (res) => {
+          const chunks = [];
+          res.on('data', c => chunks.push(c));
+          res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }));
+        });
+        r.on('error', reject);
+        r.setTimeout(10000, () => r.destroy(new Error('HLS upstream timeout')));
+        r.end();
+      });
+      if (hlsResp.status < 200 || hlsResp.status >= 300) {
+        return new Response(`Upstream ${hlsResp.status}`, { status: hlsResp.status, headers: { 'content-type': 'text/plain', ...makeCorsHeaders(req) } });
+      }
+      const ct = hlsResp.headers['content-type'] || '';
+      const isManifest = upstreamRaw.endsWith('.m3u8') || ct.includes('mpegurl') || ct.includes('x-mpegurl');
+      if (isManifest) {
+        const basePath = upstream.pathname.substring(0, upstream.pathname.lastIndexOf('/') + 1);
+        const baseOrigin = upstream.origin;
+        let manifest = hlsResp.body.toString('utf-8');
+        manifest = manifest.replace(/^(?!#)(\S+)/gm, (match) => {
+          const full = match.startsWith('http') ? match : `${baseOrigin}${basePath}${match}`;
+          return `/api/hls-proxy?url=${encodeURIComponent(full)}`;
+        });
+        manifest = manifest.replace(/URI="([^"]+)"/g, (_m, uri) => {
+          const full = uri.startsWith('http') ? uri : `${baseOrigin}${basePath}${uri}`;
+          return `URI="/api/hls-proxy?url=${encodeURIComponent(full)}"`;
+        });
+        return new Response(manifest, { status: 200, headers: { 'content-type': 'application/vnd.apple.mpegurl', 'cache-control': 'no-cache', ...makeCorsHeaders(req) } });
+      }
+      return new Response(hlsResp.body, { status: 200, headers: { 'content-type': ct || 'application/octet-stream', 'cache-control': 'no-cache', ...makeCorsHeaders(req) } });
+    } catch (e) {
+      context.logger.warn('[hls-proxy] error:', e.message);
+      return new Response('Proxy error', { status: 502, headers: { 'content-type': 'text/plain', ...makeCorsHeaders(req) } });
+    }
   }
 
   // YouTube embed bridge — exempt from auth because iframe src cannot carry
@@ -984,12 +1060,14 @@ async function dispatch(requestUrl, req, routes, context) {
     }
     return json({ verboseMode });
   }
-  // Registration — call Convex directly (desktop frontend bypasses sidecar for this endpoint;
-  // this handler only runs when CONVEX_URL is available, e.g. self-hosted deployments)
+  // Registration — call Convex directly when CONVEX_URL is available (self-hosted),
+  // otherwise proxy to cloud (desktop sidecar never has CONVEX_URL).
   if (requestUrl.pathname === '/api/register-interest' && req.method === 'POST') {
     const convexUrl = process.env.CONVEX_URL;
     if (!convexUrl) {
-      return json({ error: 'Registration service not configured — use cloud endpoint directly' }, 503);
+      const cloudResponse = await tryCloudFallback(requestUrl, req, context, 'no CONVEX_URL');
+      if (cloudResponse) return cloudResponse;
+      return json({ error: 'Registration service unavailable' }, 503);
     }
     try {
       const body = await new Promise((resolve, reject) => {
@@ -1136,9 +1214,11 @@ async function dispatch(requestUrl, req, routes, context) {
     }
 
     const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await readBody(req);
+    const hdrs = toHeaders(req.headers, { stripOrigin: true });
+    hdrs.set('Origin', `http://127.0.0.1:${context.port}`);
     const request = new Request(requestUrl.toString(), {
       method: req.method,
-      headers: toHeaders(req.headers, { stripOrigin: true }),
+      headers: hdrs,
       body,
     });
 

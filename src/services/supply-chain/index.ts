@@ -10,6 +10,7 @@ import {
   type ShippingRatePoint,
 } from '@/generated/client/worldmonitor/supply_chain/v1/service_client';
 import { createCircuitBreaker } from '@/utils';
+import { getHydratedData } from '@/services/bootstrap';
 
 export type {
   GetShippingRatesResponse,
@@ -25,7 +26,7 @@ export type {
 const client = new SupplyChainServiceClient('', { fetch: (...args) => globalThis.fetch(...args) });
 
 const shippingBreaker = createCircuitBreaker<GetShippingRatesResponse>({ name: 'Shipping Rates', cacheTtlMs: 15 * 60 * 1000, persistCache: true });
-const chokepointBreaker = createCircuitBreaker<GetChokepointStatusResponse>({ name: 'Chokepoint Status', cacheTtlMs: 5 * 60 * 1000, persistCache: true });
+const chokepointBreaker = createCircuitBreaker<GetChokepointStatusResponse>({ name: 'Chokepoint Status', cacheTtlMs: 20 * 60 * 1000, persistCache: true });
 const mineralsBreaker = createCircuitBreaker<GetCriticalMineralsResponse>({ name: 'Critical Minerals', cacheTtlMs: 60 * 60 * 1000, persistCache: true });
 
 const emptyShipping: GetShippingRatesResponse = { indices: [], fetchedAt: '', upstreamUnavailable: false };
@@ -33,6 +34,9 @@ const emptyChokepoints: GetChokepointStatusResponse = { chokepoints: [], fetched
 const emptyMinerals: GetCriticalMineralsResponse = { minerals: [], fetchedAt: '', upstreamUnavailable: false };
 
 export async function fetchShippingRates(): Promise<GetShippingRatesResponse> {
+  const hydrated = getHydratedData('shippingRates') as GetShippingRatesResponse | undefined;
+  if (hydrated) return hydrated;
+
   try {
     return await shippingBreaker.execute(async () => {
       return client.getShippingRates({});
@@ -43,6 +47,9 @@ export async function fetchShippingRates(): Promise<GetShippingRatesResponse> {
 }
 
 export async function fetchChokepointStatus(): Promise<GetChokepointStatusResponse> {
+  const hydrated = getHydratedData('chokepoints') as GetChokepointStatusResponse | undefined;
+  if (hydrated) return hydrated;
+
   try {
     return await chokepointBreaker.execute(async () => {
       return client.getChokepointStatus({});
@@ -53,6 +60,9 @@ export async function fetchChokepointStatus(): Promise<GetChokepointStatusRespon
 }
 
 export async function fetchCriticalMinerals(): Promise<GetCriticalMineralsResponse> {
+  const hydrated = getHydratedData('minerals') as GetCriticalMineralsResponse | undefined;
+  if (hydrated) return hydrated;
+
   try {
     return await mineralsBreaker.execute(async () => {
       return client.getCriticalMinerals({});

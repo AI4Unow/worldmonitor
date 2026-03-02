@@ -1,5 +1,7 @@
 // Non-sebuf: returns XML/HTML, stays as standalone Vercel function
 import { getCorsHeaders, isDisallowedOrigin } from './_cors.js';
+import { validateApiKey } from './_api-key.js';
+import { checkRateLimit } from './_rate-limit.js';
 
 export const config = { runtime: 'edge' };
 
@@ -124,6 +126,7 @@ const ALLOWED_DOMAINS = [
   // Additional tech variant domains
   'www.producthunt.com',
   'www.axios.com',
+  'api.axios.com',
   'github.blog',
   'githubnext.com',
   'mshibanami.github.io',
@@ -158,6 +161,9 @@ const ALLOWED_DOMAINS = [
   // Accelerators
   'www.techstars.com',
   // Middle East & Regional News
+  'asharqbusiness.com',
+  'asharq.com',
+  'www.omanobserver.om',
   'english.alarabiya.net',
   'www.arabnews.com',
   'www.timesofisrael.com',
@@ -327,10 +333,34 @@ const ALLOWED_DOMAINS = [
 export default async function handler(req) {
   const corsHeaders = getCorsHeaders(req, 'GET, OPTIONS');
 
+  if (isDisallowedOrigin(req)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+  if (req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
+  const keyCheck = validateApiKey(req);
+  if (keyCheck.required && !keyCheck.valid) {
+    return new Response(JSON.stringify({ error: keyCheck.error }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+
+  const rateLimitResponse = await checkRateLimit(req, corsHeaders);
+  if (rateLimitResponse) return rateLimitResponse;
 
   const requestUrl = new URL(req.url);
   const feedUrl = requestUrl.searchParams.get('url');
@@ -408,11 +438,15 @@ export default async function handler(req) {
     }
 
     const data = await response.text();
+    const isSuccess = response.status >= 200 && response.status < 300;
     return new Response(data, {
       status: response.status,
       headers: {
         'Content-Type': response.headers.get('content-type') || 'application/xml',
-        'Cache-Control': response.headers.get('cache-control') || 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
+        'Cache-Control': isSuccess
+          ? 'public, max-age=180, s-maxage=900, stale-while-revalidate=1800, stale-if-error=3600'
+          : 'public, max-age=15, s-maxage=60, stale-while-revalidate=120',
+        ...(isSuccess && { 'CDN-Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800, stale-if-error=3600' }),
         ...corsHeaders,
       },
     });

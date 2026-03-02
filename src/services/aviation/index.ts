@@ -8,7 +8,7 @@ import { createCircuitBreaker } from '@/utils';
 
 export type FlightDelaySource = 'faa' | 'eurocontrol' | 'computed';
 export type FlightDelaySeverity = 'normal' | 'minor' | 'moderate' | 'major' | 'severe';
-export type FlightDelayType = 'ground_stop' | 'ground_delay' | 'departure_delay' | 'arrival_delay' | 'general';
+export type FlightDelayType = 'ground_stop' | 'ground_delay' | 'departure_delay' | 'arrival_delay' | 'general' | 'closure';
 export type AirportRegion = 'americas' | 'europe' | 'apac' | 'mena' | 'africa';
 
 export interface AirportDelayAlert {
@@ -48,6 +48,7 @@ const DELAY_TYPE_MAP: Record<string, FlightDelayType> = {
   FLIGHT_DELAY_TYPE_DEPARTURE_DELAY: 'departure_delay',
   FLIGHT_DELAY_TYPE_ARRIVAL_DELAY: 'arrival_delay',
   FLIGHT_DELAY_TYPE_GENERAL: 'general',
+  FLIGHT_DELAY_TYPE_CLOSURE: 'closure',
 };
 
 const REGION_MAP: Record<string, AirportRegion> = {
@@ -90,7 +91,7 @@ function toDisplayAlert(proto: ProtoAlert): AirportDelayAlert {
 // --- Client + circuit breaker ---
 
 const client = new AviationServiceClient('', { fetch: (...args) => globalThis.fetch(...args) });
-const breaker = createCircuitBreaker<AirportDelayAlert[]>({ name: 'FAA Flight Delays', cacheTtlMs: 5 * 60 * 1000, persistCache: true });
+const breaker = createCircuitBreaker<AirportDelayAlert[]>({ name: 'Flight Delays v2', cacheTtlMs: 2 * 60 * 60 * 1000, persistCache: true });
 
 // --- Main fetch (public API) ---
 

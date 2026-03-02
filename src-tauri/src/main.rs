@@ -27,7 +27,7 @@ const MENU_HELP_GITHUB_ID: &str = "help.github";
 #[cfg(feature = "devtools")]
 const MENU_HELP_DEVTOOLS_ID: &str = "help.devtools";
 const TRUSTED_WINDOWS: [&str; 3] = ["main", "settings", "live-channels"];
-const SUPPORTED_SECRET_KEYS: [&str; 22] = [
+const SUPPORTED_SECRET_KEYS: [&str; 24] = [
     "GROQ_API_KEY",
     "OPENROUTER_API_KEY",
     "FRED_API_KEY",
@@ -50,6 +50,8 @@ const SUPPORTED_SECRET_KEYS: [&str; 22] = [
     "OLLAMA_MODEL",
     "WORLDMONITOR_API_KEY",
     "WTO_API_KEY",
+    "AVIATIONSTACK_API",
+    "ICAO_API_KEY",
 ];
 
 #[derive(Default)]
@@ -432,6 +434,8 @@ fn open_in_shell(arg: &str) -> Result<(), String> {
     let mut command = {
         let mut cmd = Command::new("xdg-open");
         cmd.arg(arg);
+        cmd.env_remove("LD_LIBRARY_PATH");
+        cmd.env_remove("LD_PRELOAD");
         cmd
     };
 
@@ -559,8 +563,8 @@ fn open_settings_window(app: &AppHandle) -> Result<(), String> {
 
     let _settings_window = WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("settings.html".into()))
         .title("World Monitor Settings")
-        .inner_size(980.0, 760.0)
-        .min_inner_size(820.0, 620.0)
+        .inner_size(980.0, 600.0)
+        .min_inner_size(820.0, 480.0)
         .resizable(true)
         .background_color(tauri::webview::Color(26, 28, 30, 255))
         .build()

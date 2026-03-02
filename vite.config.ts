@@ -497,7 +497,7 @@ const RSS_PROXY_ALLOWED_DOMAINS = new Set([
   'www.fema.gov', 'www.dhs.gov', 'www.thedrive.com', 'krebsonsecurity.com',
   'finance.yahoo.com', 'thediplomat.com', 'venturebeat.com', 'foreignpolicy.com',
   'www.ft.com', 'openai.com', 'www.reutersagency.com', 'feeds.reuters.com',
-  'rsshub.app', 'asia.nikkei.com', 'www.cfr.org', 'www.csis.org', 'www.politico.com',
+  'asia.nikkei.com', 'www.cfr.org', 'www.csis.org', 'www.politico.com',
   'www.brookings.edu', 'layoffs.fyi', 'www.defensenews.com', 'www.militarytimes.com',
   'taskandpurpose.com', 'news.usni.org', 'www.oryxspioenkop.com', 'www.gov.uk',
   'www.foreignaffairs.com', 'www.atlanticcouncil.org',
@@ -506,7 +506,7 @@ const RSS_PROXY_ALLOWED_DOMAINS = new Set([
   'rss.politico.com', 'www.anandtech.com', 'www.tomshardware.com', 'www.semianalysis.com',
   'feed.infoq.com', 'thenewstack.io', 'devops.com', 'dev.to', 'lobste.rs', 'changelog.com',
   'seekingalpha.com', 'news.crunchbase.com', 'www.saastr.com', 'feeds.feedburner.com',
-  'www.producthunt.com', 'www.axios.com', 'github.blog', 'githubnext.com',
+  'www.producthunt.com', 'www.axios.com', 'api.axios.com', 'github.blog', 'githubnext.com',
   'mshibanami.github.io', 'www.engadget.com', 'news.mit.edu', 'dev.events',
   'www.ycombinator.com', 'a16z.com', 'review.firstround.com', 'www.sequoiacap.com',
   'www.nfx.com', 'www.aaronsw.com', 'bothsidesofthetable.com', 'www.lennysnewsletter.com',
@@ -734,18 +734,6 @@ export default defineConfig({
           },
           {
             urlPattern: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
-              sameOrigin && /^\/ingest\//.test(url.pathname),
-            handler: 'NetworkOnly',
-            method: 'GET',
-          },
-          {
-            urlPattern: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
-              sameOrigin && /^\/ingest\//.test(url.pathname),
-            handler: 'NetworkOnly',
-            method: 'POST',
-          },
-          {
-            urlPattern: ({ url, sameOrigin }: { url: URL; sameOrigin: boolean }) =>
               sameOrigin && /^\/rss\//.test(url.pathname),
             handler: 'NetworkOnly',
             method: 'GET',
@@ -966,12 +954,6 @@ export default defineConfig({
         target: 'https://feeds.npr.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rss\/npr/, ''),
-      },
-      // RSS Feeds - AP News
-      '/rss/apnews': {
-        target: 'https://rsshub.app/apnews',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/rss\/apnews/, ''),
       },
       // RSS Feeds - Al Jazeera
       '/rss/aljazeera': {

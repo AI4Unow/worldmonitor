@@ -2,6 +2,7 @@ import { calculateCII, type CountryScore } from './country-instability';
 import type { ClusteredEvent } from '@/types';
 import type { ThreatLevel } from './threat-classifier';
 import { CURATED_COUNTRIES } from '@/config/countries';
+import { tokenizeForMatch, matchKeyword } from '@/utils/keyword-match';
 
 export interface StoryData {
   countryCode: string;
@@ -43,6 +44,7 @@ export interface StoryData {
     militaryFlights: number;
     militaryVessels: number;
     outages: number;
+    gpsJammingHexes: number;
   };
   convergence: {
     score: number;
@@ -57,7 +59,7 @@ export function collectStoryData(
   allNews: ClusteredEvent[],
   theaterPostures: Array<{ theaterId: string; theaterName: string; shortName: string; targetNation: string | null; postureLevel: string; totalAircraft: number; totalVessels: number; fighters: number; tankers: number; awacs: number; strikeCapable: boolean }>,
   predictionMarkets: Array<{ title: string; yesPrice: number }>,
-  signals?: { protests: number; militaryFlights: number; militaryVessels: number; outages: number },
+  signals?: { protests: number; militaryFlights: number; militaryVessels: number; outages: number; gpsJammingHexes: number },
   convergence?: { score: number; signalTypes: string[]; regionalDescriptions: string[] } | null,
 ): StoryData {
   const scores = calculateCII();
@@ -65,8 +67,8 @@ export function collectStoryData(
 
   const keywords = CURATED_COUNTRIES[countryCode]?.scoringKeywords || [countryName.toLowerCase()];
   const countryNews = allNews.filter(e => {
-    const lower = e.primaryTitle.toLowerCase();
-    return keywords.some(kw => lower.includes(kw));
+    const tokens = tokenizeForMatch(e.primaryTitle);
+    return keywords.some(kw => matchKeyword(tokens, kw));
   });
 
   const sortedNews = [...countryNews].sort((a, b) => {
@@ -82,8 +84,8 @@ export function collectStoryData(
   ) || null;
 
   const countryMarkets = predictionMarkets.filter(m => {
-    const lower = m.title.toLowerCase();
-    return keywords.some(kw => lower.includes(kw));
+    const mTokens = tokenizeForMatch(m.title);
+    return keywords.some(kw => matchKeyword(mTokens, kw));
   });
 
   const threatCounts = { critical: 0, high: 0, medium: 0, categories: new Set<string>() };
@@ -132,7 +134,7 @@ export function collectStoryData(
       medium: threatCounts.medium,
       categories: [...threatCounts.categories],
     },
-    signals: signals || { protests: 0, militaryFlights: 0, militaryVessels: 0, outages: 0 },
+    signals: signals || { protests: 0, militaryFlights: 0, militaryVessels: 0, outages: 0, gpsJammingHexes: 0 },
     convergence: convergence || null,
   };
 }

@@ -13,7 +13,9 @@ import { CRYPTO_META, fetchCoinGeckoMarkets } from './_shared';
 import { cachedFetchJson } from '../../../_shared/redis';
 
 const REDIS_CACHE_KEY = 'market:crypto:v1';
-const REDIS_CACHE_TTL = 300; // 5 min — CoinGecko rate-limited
+const REDIS_CACHE_TTL = 600; // 10 min — CoinGecko rate-limited
+
+const fallbackCryptoCache = new Map<string, { data: ListCryptoQuotesResponse; ts: number }>();
 
 export async function listCryptoQuotes(
   _ctx: ServerContext,
@@ -57,8 +59,12 @@ export async function listCryptoQuotes(
     return quotes.length > 0 ? { quotes } : null;
   });
 
-  return result || { quotes: [] };
+  if (result) {
+    if (fallbackCryptoCache.size > 50) fallbackCryptoCache.clear();
+    fallbackCryptoCache.set(cacheKey, { data: result, ts: Date.now() });
+  }
+  return result || fallbackCryptoCache.get(cacheKey)?.data || { quotes: [] };
   } catch {
-    return { quotes: [] };
+    return fallbackCryptoCache.get(cacheKey)?.data || { quotes: [] };
   }
 }

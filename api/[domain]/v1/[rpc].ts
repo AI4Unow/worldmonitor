@@ -12,6 +12,7 @@ import { getCorsHeaders, isDisallowedOrigin } from '../../../server/cors';
 // @ts-expect-error — JS module, no declaration file
 import { validateApiKey } from '../../_api-key.js';
 import { mapErrorToResponse } from '../../../server/error-mapper';
+import { checkRateLimit } from '../../../server/_shared/rate-limit';
 import { drainResponseHeaders } from '../../../server/_shared/response-headers';
 import { createSeismologyServiceRoutes } from '../../../src/generated/server/worldmonitor/seismology/v1/service_server';
 import { seismologyHandler } from '../../../server/worldmonitor/seismology/v1/handler';
@@ -72,21 +73,22 @@ const TIER_HEADERS: Record<CacheTier, string> = {
 const RPC_CACHE_TIER: Record<string, CacheTier> = {
   '/api/maritime/v1/get-vessel-snapshot': 'no-store',
 
-  '/api/market/v1/list-market-quotes': 'fast',
-  '/api/market/v1/list-crypto-quotes': 'fast',
-  '/api/market/v1/list-commodity-quotes': 'fast',
-  '/api/market/v1/list-stablecoin-markets': 'fast',
-  '/api/market/v1/get-sector-summary': 'fast',
-  '/api/infrastructure/v1/list-service-statuses': 'fast',
-  '/api/seismology/v1/list-earthquakes': 'fast',
-  '/api/infrastructure/v1/list-internet-outages': 'fast',
+  '/api/market/v1/list-market-quotes': 'medium',
+  '/api/market/v1/list-crypto-quotes': 'medium',
+  '/api/market/v1/list-commodity-quotes': 'medium',
+  '/api/market/v1/list-stablecoin-markets': 'medium',
+  '/api/market/v1/get-sector-summary': 'medium',
+  '/api/market/v1/list-gulf-quotes': 'medium',
+  '/api/infrastructure/v1/list-service-statuses': 'slow',
+  '/api/seismology/v1/list-earthquakes': 'slow',
+  '/api/infrastructure/v1/list-internet-outages': 'slow',
 
   '/api/unrest/v1/list-unrest-events': 'slow',
   '/api/cyber/v1/list-cyber-threats': 'slow',
   '/api/conflict/v1/list-acled-events': 'slow',
   '/api/military/v1/get-theater-posture': 'slow',
   '/api/infrastructure/v1/get-temporal-baseline': 'slow',
-  '/api/aviation/v1/list-airport-delays': 'slow',
+  '/api/aviation/v1/list-airport-delays': 'static',
   '/api/market/v1/get-country-stock-index': 'slow',
 
   '/api/wildfire/v1/list-fire-detections': 'static',
@@ -127,9 +129,11 @@ const RPC_CACHE_TIER: Record<string, CacheTier> = {
   '/api/infrastructure/v1/get-cable-health': 'slow',
   '/api/positive-events/v1/list-positive-geo-events': 'slow',
 
+  '/api/military/v1/list-military-bases': 'static',
   '/api/economic/v1/get-macro-signals': 'medium',
   '/api/prediction/v1/list-prediction-markets': 'medium',
   '/api/supply-chain/v1/get-chokepoint-status': 'medium',
+  '/api/news/v1/list-feed-digest': 'slow',
 };
 
 const serverOptions: ServerOptions = { onError: mapErrorToResponse };
@@ -190,6 +194,10 @@ export default async function handler(originalRequest: Request): Promise<Respons
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
+
+  // IP-based rate limiting (60 req/min sliding window)
+  const rateLimitResponse = await checkRateLimit(request, corsHeaders);
+  if (rateLimitResponse) return rateLimitResponse;
 
   // Route matching — if POST doesn't match, convert to GET for stale clients
   // that still send POST to endpoints converted in PR #468.

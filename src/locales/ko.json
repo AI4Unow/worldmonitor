@@ -36,7 +36,10 @@
       "earthquakes": "지진",
       "displaced": "실향민",
       "climate": "기후 스트레스",
-      "conflictEvents": "분쟁 사건"
+      "conflictEvents": "분쟁 사건",
+      "activeStrikes": "활성 공습",
+      "aviationDisruptions": "공항 운항 장애",
+      "gpsJammingZones": "GPS Jamming Zones"
     },
     "timeAgo": {
       "m": "{{count}}분 전",
@@ -69,6 +72,7 @@
       "protestsDetected": "{{count}}건의 활성 시위 감지",
       "aircraftTracked": "{{count}}대의 군용 항공기 추적 중",
       "vesselsTracked": "{{count}}척의 군함 추적 중",
+      "activeStrikes": "{{count}}건의 활성 공습 감지",
       "internetOutages": "{{count}}건의 인터넷 장애",
       "recentEarthquakes": "{{count}}건의 최근 지진",
       "stockIndex": "주가 지수: {{value}}",
@@ -186,6 +190,8 @@
     "climate": "기후 이상",
     "populationExposure": "인구 노출",
     "securityAdvisories": "보안 권고",
+    "orefSirens": "Israel Sirens",
+    "telegramIntel": "Telegram 인텔리전스",
     "startups": "스타트업 & VC",
     "vcblogs": "VC 인사이트 & 에세이",
     "regionalStartups": "글로벌 스타트업 뉴스",
@@ -206,7 +212,11 @@
     "techReadiness": "기술 준비 지수",
     "gccInvestments": "GCC 투자",
     "geoHubs": "지정학 허브",
-    "liveWebcams": "실시간 웹캠"
+    "liveWebcams": "실시간 웹캠",
+    "gulfEconomies": "걸프 경제",
+    "gulfIndices": "걸프 지수",
+    "gulfCurrencies": "걸프 통화",
+    "gulfOil": "걸프 석유"
   },
   "modals": {
     "search": {
@@ -452,7 +462,10 @@
         "earthquakes": "지진",
         "displaced": "실향민",
         "climate": "기후 스트레스",
-        "conflictEvents": "분쟁 사건"
+        "conflictEvents": "분쟁 사건",
+        "activeStrikes": "활성 공습",
+        "aviationDisruptions": "공항 운항 장애",
+        "gpsJammingZones": "GPS Jamming Zones"
       },
       "timeAgo": {
         "m": "{{count}}분 전",
@@ -485,6 +498,7 @@
         "protestsDetected": "{{count}}건의 활성 시위 감지",
         "aircraftTracked": "{{count}}대의 군용 항공기 추적 중",
         "vesselsTracked": "{{count}}척의 군함 추적 중",
+        "activeStrikes": "{{count}}건의 활성 공습 감지",
         "internetOutages": "{{count}}건의 인터넷 장애",
         "recentEarthquakes": "{{count}}건의 최근 지진",
         "stockIndex": "주가 지수: {{value}}",
@@ -495,12 +509,14 @@
   "components": {
     "webcams": {
       "regions": {
+        "iran": "IRAN ATTACKS",
         "all": "전체",
         "mideast": "중동",
         "europe": "유럽",
         "americas": "미주",
         "asia": "아시아"
-      }
+      },
+      "expand": "확장"
     },
     "monitor": {
       "placeholder": "키워드 (쉼표로 구분)",
@@ -624,7 +640,8 @@
       "error": "예측 데이터 로딩 실패",
       "yes": "예",
       "no": "아니오",
-      "vol": "거래량"
+      "vol": "거래량",
+      "closes": "마감"
     },
     "stablecoins": {
       "pegHealth": "페그 건전성",
@@ -830,7 +847,10 @@
         "centralBanks": "중앙은행",
         "commodityHubs": "원자재 허브",
         "gulfInvestments": "GCC 투자",
-        "tradeRoutes": "무역 항로"
+        "tradeRoutes": "무역 항로",
+        "iranAttacks": "이란 공격",
+        "gpsJamming": "GPS JAMMING",
+        "dayNight": "주/야간"
       },
       "tooltip": {
         "earthquake": "지진",
@@ -879,7 +899,8 @@
           "geopolitical": "지정학",
           "militaryStrategic": "군사 및 전략",
           "transport": "교통",
-          "labels": "라벨"
+          "labels": "라벨",
+          "overlays": "오버레이 및 라벨"
         },
         "descriptions": {
           "techStartupHubs": "주요 스타트업 생태계 (SF, NYC, 런던 등)",
@@ -932,7 +953,8 @@
           "techEvents": "주요 기술 컨퍼런스 및 이벤트",
           "techFires": "기술 인프라 인근 활성 산불",
           "financeGulfInvestments": "GCC 국부펀드 투자 및 해외직접투자",
-          "tradeRoutes": "전략적 병목 지점을 경유하여 항구를 연결하는 주요 글로벌 해운 항로"
+          "tradeRoutes": "전략적 병목 지점을 경유하여 항구를 연결하는 주요 글로벌 해운 항로",
+          "dayNight": "주간 및 야간 영역을 표시하는 실시간 태양 종단선"
         },
         "notes": {
           "timeAffects": "영향 대상: 지진, 기상, 시위, 장애"
@@ -974,7 +996,13 @@
       "aiFlowStatusBrowserOnly": "브라우저 모델만 사용",
       "aiFlowStatusDisabled": "AI 제공자 비활성화됨",
       "insightsDisabledTitle": "AI 분석이 비활성화되었습니다",
-      "insightsDisabledHint": "지도 헤더의 설정 기어를 통해 제공자를 활성화하세요"
+      "insightsDisabledHint": "지도 헤더의 설정 기어를 통해 제공자를 활성화하세요",
+      "sectionPanels": "패널",
+      "badgeAnimLabel": "배지 애니메이션",
+      "badgeAnimDesc": "패널 헤더의 업데이트 배지 애니메이션",
+      "sectionIntelligence": "인텔리전스",
+      "headlineMemoryLabel": "헤드라인 메모리",
+      "headlineMemoryDesc": "본 헤드라인을 기억하여 새 기사 강조"
     },
     "cascade": {
       "noImpacts": "국가 영향 감지되지 않음",
@@ -1105,6 +1133,19 @@
       },
       "infoTooltip": "<strong>보안 주의보</strong><br>각국 외교부의 여행 주의보 및 보안 경보:<br><br><strong>출처:</strong><br>🇺🇸 미 국무부 여행 주의보<br>🇦🇺 호주 DFAT Smartraveller<br>🇬🇧 영국 FCDO 여행 안내<br>🇳🇿 뉴질랜드 MFAT SafeTravel<br><br><strong>수준:</strong><br>🟥 여행 금지<br>🟧 여행 재고<br>🟨 주의 필요<br>🟩 일반 주의"
     },
+    "orefSirens": {
+      "checking": "Checking siren alerts...",
+      "noAlerts": "No active sirens — all clear",
+      "notConfigured": "Sirens service not configured",
+      "activeSirens": "{{count}} active siren(s)",
+      "area": "Area",
+      "time": "Time",
+      "justNow": "just now",
+      "historyCount": "{{count}} alerts in last 24h",
+      "historySummary": "24시간 내 {{count}}건의 경보 — {{waves}}회 파동",
+      "loadingHistory": "이력 로딩 중...",
+      "infoTooltip": "<strong>Israel Sirens</strong><br>Real-time rocket and missile siren alerts from Israel Home Front Command.<br><br>Data is polled every 10 seconds. A pulsing red indicator means active sirens are sounding."
+    },
     "satelliteFires": {
       "noData": "화재 데이터 없음",
       "region": "지역",
@@ -1204,7 +1245,14 @@
     "runtimeConfig": {
       "getApiKey": "API 키 발급"
     },
+    "breakingNews": {
+      "critical": "심각",
+      "high": "높음",
+      "dismiss": "닫기",
+      "enableNotifications": "데스크톱 알림 활성화"
+    },
     "intelligenceFindings": {
+      "breakingAlerts": "긴급 경보",
       "popupAlerts": "새 경보 팝업 표시",
       "badgeTitle": "정보 분석 결과",
       "title": "정보 분석 결과",
@@ -1237,7 +1285,8 @@
         "minutesAgo": "{{count}}m 전",
         "hoursAgo": "{{count}}h 전",
         "daysAgo": "{{count}}d 전"
-      }
+      },
+      "hideFindings": "결과 숨기기"
     },
     "countryTimeline": {
       "now": "현재",
@@ -1245,6 +1294,19 @@
     },
     "gdeltIntel": {
       "infoTooltip": "<strong>GDELT 인텔리전스</strong> 실시간 글로벌 뉴스 모니터링:<ul><li>선별된 주제 카테고리 (분쟁, 사이버 등)</li><li>100개 이상 언어의 기사를 번역</li><li>15분마다 업데이트</li></ul>출처: GDELT Project (gdeltproject.org)"
+    },
+    "telegramIntel": {
+      "infoTooltip": "모니터링 중인 Telegram OSINT 채널의 실시간 신호",
+      "loading": "Telegram 릴레이에 연결 중...",
+      "empty": "사용 가능한 메시지 없음",
+      "disabled": "Telegram 릴레이가 비활성 상태입니다",
+      "filterAll": "전체",
+      "filterBreaking": "속보",
+      "filterConflict": "분쟁",
+      "filterAlerts": "경보",
+      "filterOsint": "OSINT",
+      "filterPolitics": "정치",
+      "filterMiddleeast": "중동"
     },
     "investments": {
       "infoTooltip": "사우디아라비아와 UAE의 글로벌 핵심 인프라 해외직접투자 데이터베이스. 행을 클릭하면 지도에서 해당 투자를 확인할 수 있습니다.",
@@ -1400,9 +1462,14 @@
       "regionAsia": "아시아",
       "regionMiddleEast": "중동",
       "regionAfrica": "아프리카",
+      "regionOceania": "오세아니아",
       "invalidHandle": "유효한 YouTube 핸들을 입력하세요 (예: @ChannelName)",
       "channelNotFound": "YouTube 채널을 찾을 수 없습니다",
       "verifying": "확인 중…"
+    },
+    "map": {
+      "showMap": "지도 표시",
+      "hideMap": "지도 숨기기"
     }
   },
   "popups": {
@@ -1456,12 +1523,20 @@
       "riots": "폭동",
       "highSeverity": "고위험"
     },
+    "gpsJamming": {
+      "title": "GPS/GNSS 간섭",
+      "interference": "간섭",
+      "aircraftAffected": "영향받은 항공기",
+      "aircraftNormal": "정상 항공기",
+      "h3Hex": "H3 Hex"
+    },
     "flight": {
       "groundStop": "지상 정지",
       "groundDelay": "지상 지연 프로그램",
       "departureDelay": "출발 지연",
       "arrivalDelay": "도착 지연",
       "delaysReported": "지연 보고됨",
+      "closure": "공항 폐쇄",
       "delays": "지연",
       "avgDelay": "평균 지연",
       "cancelled": "결항",
@@ -1833,6 +1908,9 @@
     },
     "commodityHub": {
       "commodities": "원자재"
+    },
+    "iranEvent": {
+      "relatedEvents": "관련 사건"
     },
     "hotspotSubtexts": {
       "conflict_zone": "분쟁 지역",
